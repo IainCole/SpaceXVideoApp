@@ -597,7 +597,9 @@ function AppController($scope, $q, imgService, preloader) {
 	};
 
 	$scope.getMacroblockOperations = function () {
-		var ret = [];
+		var flat = [];
+
+		// We need to do y by x rather than x by y, there's probably a better way of doing this but I'm tired
 
 		for (x = 0; x < $scope.data.macroBlockOperations.length; x++) {
 			if (!$scope.data.macroBlockOperations[x]) {
@@ -609,11 +611,37 @@ function AppController($scope, $q, imgService, preloader) {
 					continue;
 				}
 
-				ret.push($scope.data.macroBlockOperations[x][y]);
+				flat.push($scope.data.macroBlockOperations[x][y]);
 			}
 		}
 
-		return ret;
+		var ybyx = [];
+
+		for (var i = 0; i < flat.length; i++) {
+			if (!ybyx[flat[i].y]) {
+				ybyx[flat[i].y] = [];
+			}
+
+			ybyx[flat[i].y][flat[i].x] = flat[i];
+		}
+
+		flat = [];
+
+		for (y = 0; y < ybyx.length; y++) {
+			if (!ybyx[y]) {
+				continue;
+			}
+
+			for (x = 0; x < ybyx[y].length; x++) {
+				if (!ybyx[y][x]) {
+					continue;
+				}
+
+				flat.push(ybyx[y][x]);
+			}
+		}
+
+		return flat;
 	};
 
 	$scope.showMb = function (op) {
