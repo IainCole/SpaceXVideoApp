@@ -248,8 +248,12 @@ function AppController($scope, $q, imgService, preloader) {
 	});
 
 	$scope.$watch('data.mmb', function (newVal, oldVal) {
-		if (newVal !== oldVal) {
-			$scope.parseMMB();
+		if ($scope.data.mmbForced) {
+			$scope.data.mmbForced = false;
+		} else {
+			if (newVal !== oldVal) {
+				$scope.parseMMB();
+			}
 		}
 	});
 
@@ -267,7 +271,10 @@ function AppController($scope, $q, imgService, preloader) {
 	$scope.updateImage = function () {
 		var mmb = getMMBString();
 
-		$scope.data.mmb = mmb;
+		if ($scope.data.mmb != mmb) {
+			$scope.data.mmb = mmb;
+			$scope.data.mmbForced = true;
+		}
 
 		if (mmb) {
 			mmb = '&mmb=' + mmb;
@@ -301,7 +308,7 @@ function AppController($scope, $q, imgService, preloader) {
 	};
 
 	var mbOp = /^([0-9]+):([0-9]+):(-1|-2|[0-9]+)(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?$/ ;
-	var reXor = /^x:([0-9]+):([0-9a-f]{2,2})$/i ;
+	var reXor = /^x:([0-9]+):([0-9a-f]{1,2})$/i ;
 
 	function parseMMBPart(op) {
 		if (mbOp.test(op)) {
@@ -344,6 +351,10 @@ function AppController($scope, $q, imgService, preloader) {
 				$scope.data.macroBlockOperations[x] = [];
 			}
 
+			if ($scope.data.macroBlockOperations[x][y]) {
+				op.__visible = $scope.data.macroBlockOperations[x][y].__visible;
+			}
+			
 			$scope.data.macroBlockOperations[x][y] = op;
 		} else if (reXor.test(op)) {
 			var matches = reXor.exec(op);
@@ -396,28 +407,85 @@ function AppController($scope, $q, imgService, preloader) {
 				if ($scope.data.macroBlockOperations[x][y].__type == 'macro_block_op') {
 					mmb += pad(x) + ':' + pad(y) + ':' + $scope.data.macroBlockOperations[x][y].pos;
 
+					var lastVal = 0;
+
 					if ($scope.data.macroBlockOperations[x][y].l1) {
-						mmb += ':' + $scope.data.macroBlockOperations[x][y].l1;
+						lastVal = 1;
+					}
 
-						if ($scope.data.macroBlockOperations[x][y].l2) {
-							mmb += ':' + $scope.data.macroBlockOperations[x][y].l2;
+					if ($scope.data.macroBlockOperations[x][y].l2) {
+						lastVal = 2;
+					}
 
-							if ($scope.data.macroBlockOperations[x][y].l3) {
-								mmb += ':' + $scope.data.macroBlockOperations[x][y].l3;
+					if ($scope.data.macroBlockOperations[x][y].l3) {
+						lastVal = 3;
+					}
 
-								if ($scope.data.macroBlockOperations[x][y].l4) {
-									mmb += ':' + $scope.data.macroBlockOperations[x][y].l4;
+					if ($scope.data.macroBlockOperations[x][y].l4) {
+						lastVal = 4;
+					}
 
-									if ($scope.data.macroBlockOperations[x][y].c1) {
-										mmb += ':' + $scope.data.macroBlockOperations[x][y].c1;
+					if ($scope.data.macroBlockOperations[x][y].c1) {
+						lastVal = 5;
+					}
 
-										if ($scope.data.macroBlockOperations[x][y].c2) {
-											mmb += ':' + $scope.data.macroBlockOperations[x][y].c2;
-										}
-									}
-								}
-							}
-						}
+					if ($scope.data.macroBlockOperations[x][y].c2) {
+						lastVal = 6;
+					}
+
+
+
+					if (lastVal > 0) {
+						mmb += ':';
+					}
+					
+					if ($scope.data.macroBlockOperations[x][y].l1) {
+						mmb += $scope.data.macroBlockOperations[x][y].l1;
+					}
+
+					
+					if (lastVal > 1) {
+						mmb += ':';
+					}
+					
+					if ($scope.data.macroBlockOperations[x][y].l2) {
+						mmb += $scope.data.macroBlockOperations[x][y].l2;
+					}
+
+					
+					if (lastVal > 2) {
+						mmb += ':';
+					}
+					
+					if ($scope.data.macroBlockOperations[x][y].l3) {
+						mmb += $scope.data.macroBlockOperations[x][y].l3;
+					}
+
+
+					if (lastVal > 3) {
+						mmb += ':';
+					}
+					
+					if ($scope.data.macroBlockOperations[x][y].l4) {
+						mmb += $scope.data.macroBlockOperations[x][y].l4;
+					}
+
+
+					if (lastVal > 4) {
+						mmb += ':';
+					}
+					
+					if ($scope.data.macroBlockOperations[x][y].c1) {
+						mmb += $scope.data.macroBlockOperations[x][y].c1;
+					}
+
+					
+					if (lastVal > 5) {
+						mmb += ':';
+					}
+
+					if ($scope.data.macroBlockOperations[x][y].c2) {
+						mmb += $scope.data.macroBlockOperations[x][y].c2;
 					}
 				}
 			}
@@ -447,7 +515,7 @@ function AppController($scope, $q, imgService, preloader) {
 					return false;
 				}
 
-				if (! /^[0-9a-f]{2,2}$/i .test($scope.data.globalOperations[x].mask)) {
+				if (! /^[0-9a-f]{1,2}$/i .test($scope.data.globalOperations[x].mask)) {
 					$scope.data.globalOperations[x].__valid = false;
 					return false;
 				}
