@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.min.js"></script>
+	<script type="text/javascript" src="./script.js"></script>
+</head>
+<style type="text/css">
+	body 
+	{
+		font-family: Arial, Helvetica, sans-serif;
+		font-size:14px;
+	}
+	
+	
+	.cf:before,
+	.cf:after {
+		content: " "; /* 1 */
+		display: table; /* 2 */
+	}
+
+	.cf:after {
+		clear: both;
+	}
+	
+	#imageMask
+	{
+		width: 704px;
+		height: 480px;
+		position: relative;
+		float: left;
+	}
+	#imgCursor, #selectedBlock
+	{
+		width: 14px;
+		height: 14px;
+		position: absolute;
+	}
+	#imgCursor
+	{
+		border: 1px solid green;
+	}
+	#selectedBlock
+	{
+		border: 1px solid red;
+	}
+	#imageInfo 
+	{
+		height: 15px;
+		margin-bottom: 6px;
+		width: 702px;
+		position:relative;
+	}
+	
+	#spinner 
+	{
+		background: url("./ajax-loader.gif") no-repeat scroll center center rgba(0, 0, 0, 0);
+		position:absolute;
+		top:0;
+		right:0;
+		width:208px;
+		height:100%;
+		visibility: hidden;
+	}
+	#spinner.visible 
+	{
+		visibility:visible;
+	}
+	
+	select 
+	{
+		border: 1px solid #DEDEDE;
+		margin: 5px;
+		width: 170px;
+	}
+	
+	input 
+	{
+		border: 1px solid #DEDEDE;
+		margin: 5px;
+	}
+	
+	#mmb
+	{
+		border: 1px solid #DEDEDE;
+		height: 70px;
+		margin: 5px;
+		resize: none;
+		width: 993px;
+	}
+	
+	#selectedFrame 
+	{
+		width:1000px;
+	}
+	
+	#operations 
+	{
+		background-color: #FAFAFA;
+		border: 1px solid #DEDEDE;
+		float: right;
+		min-height: 865px;
+		padding: 10px;
+		width: 255px;
+	}
+	
+	#globalOperations 
+	{
+		margin-bottom:30px;
+	}
+	
+	#log 
+	{
+		border: 1px solid #DEDEDE;
+		float: left;
+		height: 400px;
+		margin: 5px 0;
+		width: 701px;
+		resize:vertical;
+	}
+	
+	p 
+	{
+		margin: 0;
+		padding-bottom: 5px;
+	}
+	
+	.op
+	{
+		background-color: #EBEBEB;
+		border: 1px solid #DEDEDE;
+		padding: 5px;
+		margin-bottom:8px;
+		position:relative;
+	}
+	
+	.op-title 
+	{
+		cursor:pointer;
+		text-decoration:underline;
+		color:blue;
+	}
+	
+	.op-remove
+	{
+		position:absolute;
+		top:6px;
+		right:5px;
+		font-size:12px;
+		color:blue;
+		cursor:pointer;
+	}
+	
+	.xor-bitpos
+	{
+		padding-top:22px;
+	}
+	
+	.xor-bitpos .pos 
+	{
+		display:inline-block;
+		width:102px;
+	}
+	
+	.xor-bitpos .mask 
+	{
+		display:inline-block;
+		width:102px;
+	}
+	
+	.mb-op .pos
+	{
+		float:left;
+		width:230px;
+	}
+	
+	.mb-op .l1
+	{
+		float:left;
+		clear:left;
+		width:109px;
+	}
+	
+	.mb-op .l2
+	{
+		float:left;
+		width:109px;
+	}
+	
+	.mb-op .l3
+	{
+		float:left;
+		width:109px;
+	}
+	
+	.mb-op .l4
+	{
+		float:left;
+		width:109px;
+	}
+	
+	.mb-op .c1
+	{
+		float:left;
+		width:109px;
+	}
+	
+	.mb-op .c2
+	{
+		float:left;
+		width:109px;
+	}
+	
+</style>
+<body ng-app="spacex">
+	<div ng-controller="AppController">
+		<div ng-show="loaded">
+			<select id="frameSet" ng-model="data.selectedFrameSet" ng-options="item as item.name for item in frameSet">
+				<option value="">-- frame set --</option>
+			</select>
+			<select id="frame" ng-if="data.selectedFrameSet" ng-model="data.selectedFrame" ng-options="item as item.id for item in data.selectedFrameSet.frames">
+				<option value="">-- frame --</option>
+			</select>
+			<div id="selectedFrame" class="cf" ng-if="data.selectedFrame !== null">
+				<textarea ng-model="data.mmb" id="mmb" enter-submit placeholder="-mmb goes here"></textarea>
+				<div id="imageInfo">
+					<p ng-if="data.selectedMacroBlock">MB {{data.selectedMacroBlock.x}}:{{data.selectedMacroBlock.y}} - {{getMBLogInfo(data.selectedMacroBlock.x, data.selectedMacroBlock.y)}}</p>
+					<div id="spinner" ng-class="{true: 'visible'}[showSpinner]"></div>
+				</div>
+				<div id="imageMask" macroblock-selector="data">
+					<img src="{{imagePath}}" width="703" height="480" />
+				</div>
+				<div id="operations">
+					<div id="globalOperations">
+						<p>Invert bits</p>
+						<div ng-repeat="op in data.globalOperations">
+							<div class="op xor-bitpos cf" ng-if="op.__type == 'xor_bitpos'">
+								<div class="op-remove" ng-click="removeGlobalOp(op)">Remove</div>
+								<input class="pos" type="number" ng-model="op.pos" placeholder="pos" /> : <input class="mask" type="text" ng-model="op.mask" placeholder="mask" />
+							</div>
+						</div>
+						<input id="addInvertBits" type="submit" value="Add" ng-click="addInvertBits()" />
+					</div>
+					<p>Macroblocks</p>
+					<div class="op mb-op" ng-repeat="op in getMacroblockOperations()">
+						<div class="op-title" ng-click="showMb(op)">MB {{op.x}}:{{op.y}}</div>
+						<div class="op-remove" ng-click="removeMb(op)">Remove</div>
+						<div class="cf" ng-show="op.__visible">
+							<input class="pos" type="number" ng-model="op.pos" placeholder="pos" />
+							<input class="l1" type="number" ng-model="op.l1" placeholder="L1" />
+							<input class="l2" type="number" ng-model="op.l2" placeholder="L2" />
+							<input class="l3" type="number" ng-model="op.l3" placeholder="L3" />
+							<input class="l4" type="number" ng-model="op.l4" placeholder="L4" />
+							<input class="c1" type="number" ng-model="op.c1" placeholder="C1" />
+							<input class="c2" type="number" ng-model="op.c2" placeholder="C2" />
+						</div>
+					</div>
+				</div>
+				<textarea ng-model="data.frameLog" readonly="readonly" id="log" enter-submit></textarea>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
