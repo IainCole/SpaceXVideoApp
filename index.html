@@ -126,6 +126,13 @@
 		padding-bottom: 5px;
 	}
 	
+	#imgLink
+	{
+		float: left;
+		margin: 5px 0 0;
+		padding: 0;
+	}
+	
 	.op
 	{
 		background-color: #EBEBEB;
@@ -257,6 +264,7 @@
 						</div>
 					</div>
 				</div>
+				<p id="imgLink" ng-if="imagePath"><a target="_blank" href="{{imagePath}}">Save Image</a> (right click save as)</p>
 				<textarea ng-model="data.frameLog" readonly="readonly" id="log" enter-submit></textarea>
 			</div>
 		</div>
