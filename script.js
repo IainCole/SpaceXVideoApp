@@ -240,9 +240,11 @@ function AppController($scope, $q, imgService, preloader) {
 		if (newVal !== oldVal) {
 			if (newVal.defaultMmb) {
 				$scope.data.mmb = newVal.defaultMmb || null;
-				$scope.parseMMB();
+			} else {
+				$scope.data.mmb = null;
 			}
-			
+
+			$scope.parseMMB();
 			$scope.updateImage();
 		}
 	});
