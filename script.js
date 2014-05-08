@@ -496,6 +496,7 @@ function AppController($scope, $q, imgService, preloader) {
 	}
 
 	$scope.$watch('data.globalOperations', function (newVal, oldVal) {
+		removeEmptyMacroblocks();
 		if (allOperationsValid()) {
 			$scope.updateImage();
 		}
@@ -510,7 +511,7 @@ function AppController($scope, $q, imgService, preloader) {
 	function allOperationsValid() {
 		for (x = 0; x < $scope.data.globalOperations.length; x++) {
 			if ($scope.data.globalOperations[x].__type == 'xor_bitpos') {
-				if (parseInt($scope.data.globalOperations[x].pos) < 0) {
+				if (isNaN(parseInt($scope.data.globalOperations[x].pos)) || parseInt($scope.data.globalOperations[x].pos) < 0) {
 					$scope.data.globalOperations[x].__valid = false;
 					return false;
 				}
@@ -591,8 +592,10 @@ function AppController($scope, $q, imgService, preloader) {
 	}
 
 	$scope.addInvertBits = function () {
+		removeEmptyMacroblocks();
 		$scope.data.globalOperations.push({
-			__type: 'xor_bitpos'	
+			__type: 'xor_bitpos',
+			mask: '1'
 		});
 	};
 
@@ -697,7 +700,7 @@ function AppController($scope, $q, imgService, preloader) {
 		$scope.data.macroBlockOperations[op.x][op.y] = undefined;
 	};
 	
-	$scope.$watch('data.selectedMacroBlock', function (newVal) {
+	function removeEmptyMacroblocks() {
 		// Remove any completely empty macroblock operations
 		for (x = 0; x < $scope.data.macroBlockOperations.length; x++) {
 			if (!$scope.data.macroBlockOperations[x]) {
@@ -709,8 +712,6 @@ function AppController($scope, $q, imgService, preloader) {
 					continue;
 				}
 
-				$scope.data.macroBlockOperations[x][y].__visible = false;
-				
 				if ($scope.data.macroBlockOperations[x][y].__type == 'macro_block_op') {
 					if ($scope.data.macroBlockOperations[x][y].pos != null && $scope.data.macroBlockOperations[x][y].pos != '') {
 						continue;
@@ -744,22 +745,38 @@ function AppController($scope, $q, imgService, preloader) {
 				}
 			}
 		}
+	}
 
-		if (newVal) {
-			if (!$scope.data.macroBlockOperations[newVal.x]) {
-				$scope.data.macroBlockOperations[newVal.x] = [];
+	$scope.$watch('data.selectedMacroBlock', function (newVal) {
+		removeEmptyMacroblocks();
+
+		for (x = 0; x < $scope.data.macroBlockOperations.length; x++) {
+			if (!$scope.data.macroBlockOperations[x]) {
+				continue;
 			}
 
-			if (!$scope.data.macroBlockOperations[newVal.x][newVal.y]) {
-				$scope.data.macroBlockOperations[newVal.x][newVal.y] = {
-					__type: 'macro_block_op',
-					__visible: true,
-					x: newVal.x,
-					y: newVal.y
-				};
-			} else {
-				$scope.data.macroBlockOperations[newVal.x][newVal.y].__visible = true;
+			for (y = 0; y < $scope.data.macroBlockOperations[x].length; y++) {
+				if (!$scope.data.macroBlockOperations[x][y]) {
+					continue;
+				}
+
+				$scope.data.macroBlockOperations[x][y].__visible = false;
 			}
+		}
+
+		if (!$scope.data.macroBlockOperations[newVal.x]) {
+			$scope.data.macroBlockOperations[newVal.x] = [];
+		}
+
+		if (!$scope.data.macroBlockOperations[newVal.x][newVal.y]) {
+			$scope.data.macroBlockOperations[newVal.x][newVal.y] = {
+				__type: 'macro_block_op',
+				__visible: true,
+				x: newVal.x,
+				y: newVal.y
+			};
+		} else {
+			$scope.data.macroBlockOperations[newVal.x][newVal.y].__visible = true;
 		}
 	});
 
