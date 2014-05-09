@@ -378,123 +378,25 @@ function AppController($scope, $q, imgService, preloader) {
 	}
 
 	function getMMBString() {
-		var mmb = '';
+		var mmb = [];
 
-		var x, y;
+		angular.forEach($scope.data.globalOperations, function(op, i) {
+			if (op.__type == 'xor_bitpos') mmb.push('X:' + op.pos + ':' + op.mask);
+		});
 
-		for (x = 0; x < $scope.data.globalOperations.length; x++) {
-			if (mmb != '') {
-				mmb += ',';
-			}
-			if ($scope.data.globalOperations[x].__type == 'xor_bitpos') {
-				mmb += 'X:' + $scope.data.globalOperations[x].pos + ':' + $scope.data.globalOperations[x].mask;
-			}
-		}
-		
-		for (x = 0; x < $scope.data.macroBlockOperations.length; x++) {
+		angular.forEach($scope.data.macroBlockOperations, function(row, l) {
+			if (row) angular.forEach(row, function(op, c) {
+				if (op) {
+	                                if (op.__type == 'macro_block_op') {
+						var components = [pad(l), pad(c), op.pos, op.l1, op.l2, op.l3, op.l4, op.c1, op.c2];
+						var command = components.join(":");
+						mmb.push(command.replace(new RegExp(":+$"), ""))
+					};
+				};
+			});
+		});
 
-			if (!$scope.data.macroBlockOperations[x]) {
-				continue;
-			}
-
-			for (y = 0; y < $scope.data.macroBlockOperations[x].length; y++) {
-				if (!$scope.data.macroBlockOperations[x][y]) {
-					continue;
-				}
-
-				if (mmb != '') {
-					mmb += ',';
-				}
-
-				if ($scope.data.macroBlockOperations[x][y].__type == 'macro_block_op') {
-					mmb += pad(x) + ':' + pad(y) + ':' + $scope.data.macroBlockOperations[x][y].pos;
-
-					var lastVal = 0;
-
-					if ($scope.data.macroBlockOperations[x][y].l1) {
-						lastVal = 1;
-					}
-
-					if ($scope.data.macroBlockOperations[x][y].l2) {
-						lastVal = 2;
-					}
-
-					if ($scope.data.macroBlockOperations[x][y].l3) {
-						lastVal = 3;
-					}
-
-					if ($scope.data.macroBlockOperations[x][y].l4) {
-						lastVal = 4;
-					}
-
-					if ($scope.data.macroBlockOperations[x][y].c1) {
-						lastVal = 5;
-					}
-
-					if ($scope.data.macroBlockOperations[x][y].c2) {
-						lastVal = 6;
-					}
-
-
-
-					if (lastVal > 0) {
-						mmb += ':';
-					}
-					
-					if ($scope.data.macroBlockOperations[x][y].l1) {
-						mmb += $scope.data.macroBlockOperations[x][y].l1;
-					}
-
-					
-					if (lastVal > 1) {
-						mmb += ':';
-					}
-					
-					if ($scope.data.macroBlockOperations[x][y].l2) {
-						mmb += $scope.data.macroBlockOperations[x][y].l2;
-					}
-
-					
-					if (lastVal > 2) {
-						mmb += ':';
-					}
-					
-					if ($scope.data.macroBlockOperations[x][y].l3) {
-						mmb += $scope.data.macroBlockOperations[x][y].l3;
-					}
-
-
-					if (lastVal > 3) {
-						mmb += ':';
-					}
-					
-					if ($scope.data.macroBlockOperations[x][y].l4) {
-						mmb += $scope.data.macroBlockOperations[x][y].l4;
-					}
-
-
-					if (lastVal > 4) {
-						mmb += ':';
-					}
-					
-					if ($scope.data.macroBlockOperations[x][y].c1) {
-						mmb += $scope.data.macroBlockOperations[x][y].c1;
-					}
-
-					
-					if (lastVal > 5) {
-						mmb += ':';
-					}
-
-					if ($scope.data.macroBlockOperations[x][y].c2) {
-						mmb += $scope.data.macroBlockOperations[x][y].c2;
-					}
-				}
-			}
-
-		}
-
-		return mmb;
+		return mmb.join(",");
 	}
 
 	$scope.$watch('data.globalOperations', function (newVal, oldVal) {
