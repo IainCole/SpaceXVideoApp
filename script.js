@@ -262,7 +262,7 @@ function AppController($scope, $q, imgService, preloader) {
 	$scope.parseMMB = function() {
 		$scope.data.globalOperations = [];
 		$scope.data.macroBlockOperations = [];
-		var parts = $scope.data.mmb.split(',');
+		var parts = $scope.data.mmb == null ? '' : $scope.data.mmb.split(',');
 
 		for (var i = 0; i < parts.length; i++) {
 			parseMMBPart(parts[i].replace(' ', ''));
@@ -751,6 +751,10 @@ function AppController($scope, $q, imgService, preloader) {
 
 	$scope.$watch('data.selectedMacroBlock', function (newVal) {
 		removeEmptyMacroblocks();
+
+		if(!newVal) {
+			return;
+		}
 
 		for (x = 0; x < $scope.data.macroBlockOperations.length; x++) {
 			if (!$scope.data.macroBlockOperations[x]) {
