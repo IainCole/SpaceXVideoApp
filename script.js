@@ -82,7 +82,7 @@ function formatMMB(val, lastCommandChanged, readaheadIndex) {
 			angular.forEach(row, function (op, c) {
 				if (op) {
 					if (op.__type == 'macro_block_op' && opIsValid(op)) {
-						var components = [l, c, op.pos, op.l1, op.l2, op.l3, op.l4, op.c1, op.c2];
+						var components = [c, l, op.pos, op.l1, op.l2, op.l3, op.l4, op.c1, op.c2];
 						if (lastCommandChanged && op == lastCommandChanged.op) {
 							for (var i = 0; i < components.length; i++) {
 								if (components[i] && lastCommandChanged) {
