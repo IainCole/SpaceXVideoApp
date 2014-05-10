@@ -4,17 +4,207 @@ spacex.config(['$sceDelegateProvider', function($sceDelegateProvider) {
 	$sceDelegateProvider.resourceUrlWhitelist(['self', /http:\/\/dz0bwiwndcjbh\.cloudfront\.net/ ]);
 }]);
 
-spacex.directive('enterSubmit', [function () {
-	return {
-		link: function($scope, element, attributes) {
-			element.bind('keydown', function(e) {
-				if (e.which == 13) {
-					$scope.$apply(function() {
-						$scope.parseMMB();
-					});
-				}
+function opIsValid(op) {
+	if (op.__type == 'macro_block_op') {
+
+		if (parseInt(op.x) < 0) {
+			return false;
+		}
+
+		if (parseInt(op.y) < 0) {
+			return false;
+		}
+
+		if (isNaN(parseInt(op.pos)) || parseInt(op.pos) < -2) {
+			return false;
+		}
+
+		if (op.l1 != undefined && op.l1 != null && isNaN(parseInt(op.l1))) {
+			return false;
+		}
+
+		if (op.l2 != undefined && op.l2 != null && isNaN(parseInt(op.l2))) {
+			return false;
+		}
+
+		if (op.l3 != undefined && op.l3 != null && isNaN(parseInt(op.l3))) {
+			return false;
+		}
+
+		if (op.l4 != undefined && op.l4 != null && isNaN(parseInt(op.l4))) {
+			return false;
+		}
+
+		if (op.c1 != undefined && op.c1 != null && isNaN(parseInt(op.c1))) {
+			return false;
+		}
+
+		if (op.c2 != undefined && op.c2 != null && isNaN(parseInt(op.c2))) {
+			return false;
+		}
+		
+		return true;
+	} else {
+		if (op.__type == 'xor_bitpos') {
+			if (isNaN(parseInt(op.pos)) || parseInt(op.pos) < 0) {
+				return false;
+			}
+
+			if (!/^[0-9a-f]{1,2}$/i.test(op.mask)) {
+				return false;
+			}
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+function formatMMB(val, lastCommandChanged, readaheadIndex) {
+	readaheadIndex = readaheadIndex || 0;
+	lastCommandChanged = lastCommandChanged || null;
+	
+	var mmb = [];
+
+	angular.forEach(val.globalOperations, function (op, i) {
+		if (op.__type == 'xor_bitpos' && opIsValid(op)) {
+			var pos = op.pos;
+			if (lastCommandChanged && op == lastCommandChanged.op) {
+				pos += lastCommandChanged.delta * readaheadIndex;
+			};
+			mmb.push('X:' + pos + ':' + op.mask);
+		};
+	});
+
+	angular.forEach(val.macroblockOperations, function (row, l) {
+		if (row) {
+			angular.forEach(row, function (op, c) {
+				if (op) {
+					if (op.__type == 'macro_block_op' && opIsValid(op)) {
+						var components = [l, c, op.pos, op.l1, op.l2, op.l3, op.l4, op.c1, op.c2];
+						if (lastCommandChanged && op == lastCommandChanged.op) {
+							for (var i = 0; i < components.length; i++) {
+								if (components[i] && lastCommandChanged) {
+									components[i] += lastCommandChanged.delta[i] * readaheadIndex;
+								}
+							};
+						}
+						var command = components.join(":");
+						mmb.push(command.replace(new RegExp(":+$"), ""));
+					};
+				};
 			});
 		}
+	});
+
+	return mmb.join(",");
+}
+
+var mbOp = /^([0-9]+):([0-9]+):(-1|-2|[0-9]+)(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?$/;
+var reXor = /^x:([0-9]+):([0-9a-f]{1,2})$/i;
+
+function parseMMBPart(op) {
+	if (mbOp.test(op)) {
+		var matches = mbOp.exec(op);
+		var x = parseInt(matches[1]);
+		var y = parseInt(matches[2]);
+		var pos = parseInt(matches[3]);
+
+		var op = {
+			__type: 'macro_block_op',
+			x: x,
+			y: y,
+			pos: pos
+		};
+
+		if (matches[4]) {
+			op.l1 = parseInt(matches[4]);
+		}
+
+		if (matches[5]) {
+			op.l2 = parseInt(matches[5]);
+		}
+
+		if (matches[6]) {
+			op.l3 = parseInt(matches[6]);
+		}
+		if (matches[7]) {
+			op.l4 = parseInt(matches[7]);
+		}
+
+		if (matches[8]) {
+			op.c1 = parseInt(matches[8]);
+		}
+
+		if (matches[9]) {
+			op.c2 = parseInt(matches[9]);
+		}
+
+		return op;
+	} else if (reXor.test(op)) {
+		var matches = reXor.exec(op);
+		var pos = parseInt(matches[1]);
+		var mask = matches[2];
+
+		return {
+			__type: 'xor_bitpos',
+			pos: pos,
+			mask: mask
+		};
+	}
+
+	return null;
+}
+
+function parseMMB (mmbString) {
+	var parts = mmbString == null ? '' : mmbString.split(',');
+
+	var val = {
+		globalOperations: [],
+		macroblockOperations: []
+	};
+
+	for (var i = 0; i < parts.length; i++) {
+		var op = parseMMBPart(parts[i].replace(' ', ''));
+
+		if (op == null) {
+			continue;
+		}
+
+		switch (op.__type) {
+			case 'macro_block_op':
+				if (!val.macroblockOperations[op.y]) {
+					val.macroblockOperations[op.y] = [];
+				}
+
+				val.macroblockOperations[op.y][op.x] = op;
+				break;
+			case 'xor_bitpos':
+				val.globalOperations.push(op);
+				break;
+		}
+	}
+
+	return val;
+}
+
+spacex.directive('parseMmb', [function () {
+	return {
+		link: function ($scope, element, attributes, ngModel) {
+			$scope.$watch(attributes.ngModel, function (newVal) {
+				element[0].value = formatMMB(newVal);
+			}, true);
+
+			ngModel.$formatters.push(function (value) {
+				return formatMMB(value);
+			});
+
+			ngModel.$parsers.push(function (value) {
+				return parseMMB(value);
+			});
+		},
+		require: 'ngModel'
 	};
 } ]);
 
@@ -222,16 +412,16 @@ function AppController($scope, $q, imgService, preloader) {
 			});
 
 	$scope.data = {
-		mmb: '',
+		mmb: {
+			globalOperations: [],
+			macroblockOperations: []			
+		},
 		selectedFrameSet: null,
 		selectedFrame: null,
-		globalOperations: [],
-		macroBlockOperations: [],
-		globalOperationToAdd: null,
 		selectedMacroBlock: null,
 		currentImageInfo: []
 	};
-	
+
 	$scope.$watch('data.selectedFrameSet', function (newVal, oldVal) {
 		if (!newVal || newVal !== oldVal) {
 			$scope.data.selectedFrame = null;
@@ -241,290 +431,71 @@ function AppController($scope, $q, imgService, preloader) {
 	$scope.$watch('data.selectedFrame', function (newVal, oldVal) {
 		if (newVal !== oldVal) {
 			if (newVal.defaultMmb) {
-				$scope.data.mmb = newVal.defaultMmb || '';
+				$scope.data.mmb = parseMMB(newVal.defaultMmb);
 			} else {
-				$scope.data.mmb = '';
+				$scope.data.mmb = parseMMB(null);
 			}
 
-			$scope.parseMMB();
 			$scope.updateImage();
 		}
 	});
 
 	$scope.$watch('data.mmb', function (newVal, oldVal) {
-		if ($scope.data.mmbForced) {
-			$scope.data.mmbForced = false;
-		} else {
-			if (newVal !== oldVal) {
-				$scope.parseMMB();
-			}
+		if (newVal !== oldVal) {
+			$scope.updateImage();
 		}
-	});
+	}, true);
 
-	$scope.parseMMB = function() {
-		$scope.data.globalOperations = [];
-		$scope.data.macroBlockOperations = [];
-		var parts = $scope.data.mmb == null ? '' : $scope.data.mmb.split(',');
-
-		for (var i = 0; i < parts.length; i++) {
-			parseMMBPart(parts[i].replace(' ', ''));
-		}
-		$scope.updateImage();
-	};
+	var currentImageUrl;
 
 	$scope.updateImage = function () {
-		var mmb = getMMBString();
-
-		if ($scope.data.mmb != mmb) {
-			$scope.data.mmb = mmb;
-			$scope.data.mmbForced = true;
-		}
-
 		if (!$scope.data.selectedFrame) {
 			$scope.imagePath = null;
 			return;
 		}
 
-		var url = generateURL(mmb);
+		var mmbString = formatMMB($scope.data.mmb);
 
-		if ($scope.imagePath !== url) {
+		var url = generateURL(mmbString);
+
+		if (currentImageUrl !== url) {
 			if (!url) {
 				$scope.imagePath = null;
+				currentImageUrl = null;
 				return;
 			}
 
 			$scope.showSpinner = true;
+			currentImageUrl = url;
 
 			preloader.preloadImages([url]).then(function () {
 				$scope.imagePath = url;
 				$scope.showSpinner = false;
 			});
 
-			imgService.getFrameInfo($scope.data.selectedFrameSet.id, $scope.data.selectedFrame.id, $scope.version, mmb).then(function (result) {
+			imgService.getFrameInfo($scope.data.selectedFrameSet.id, $scope.data.selectedFrame.id, $scope.version, mmbString).then(function (result) {
 				$scope.data.frameLog = result;
 				parseInfo(result);
 			});
 
 			if ($scope.lastCommandChanged && $scope.lastCommandChanged.preload) {
-				var readaheadMMB = getMMBString(1);
+				var readaheadMMB = formatMMB($scope.data.mmb, $scope.lastCommandChanged, 1);
 				preloader.preloadImages([generateURL(readaheadMMB)]);
 			}
 		}
 	};
 
-	function generateURL(mmb) {
-		if (mmb) {
-			mmb = '&mmb=' + mmb;
+	function generateURL(mmbString) {
+		if (mmbString) {
+			mmbString = '&mmb=' + mmbString;
 		}
 
-		return 'http://dz0bwiwndcjbh.cloudfront.net/' + $scope.data.selectedFrameSet.id + '/' + $scope.data.selectedFrame.id + '?v=' + $scope.version + mmb;
+		return 'http://dz0bwiwndcjbh.cloudfront.net/' + $scope.data.selectedFrameSet.id + '/' + $scope.data.selectedFrame.id + '?v=' + $scope.version + mmbString;
 	};
-
-	var mbOp = /^([0-9]+):([0-9]+):(-1|-2|[0-9]+)(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?$/ ;
-	var reXor = /^x:([0-9]+):([0-9a-f]{1,2})$/i ;
-
-	function parseMMBPart(op) {
-		if (mbOp.test(op)) {
-			var matches = mbOp.exec(op);
-			var x = parseInt(matches[1]);
-			var y = parseInt(matches[2]);
-			var pos = parseInt(matches[3]);
-
-			var op = {
-				__type: 'macro_block_op',
-				x: x,
-				y: y,
-				pos: pos
-			};
-
-			if (matches[4]) {
-				op.l1 = parseInt(matches[4]);
-			}
-
-			if (matches[5]) {
-				op.l2 = parseInt(matches[5]);
-			}
-
-			if (matches[6]) {
-				op.l3 = parseInt(matches[6]);
-			}
-			if (matches[7]) {
-				op.l4 = parseInt(matches[7]);
-			}
-
-			if (matches[8]) {
-				op.c1 = parseInt(matches[8]);
-			}
-
-			if (matches[9]) {
-				op.c2 = parseInt(matches[9]);
-			}
-
-			if (!$scope.data.macroBlockOperations[y]) {
-				$scope.data.macroBlockOperations[y] = [];
-			}
-
-			if ($scope.data.macroBlockOperations[y][x]) {
-				op.__visible = $scope.data.macroBlockOperations[y][x].__visible;
-			}
-			
-			$scope.data.macroBlockOperations[y][x] = op;
-		} else if (reXor.test(op)) {
-			var matches = reXor.exec(op);
-			var pos = parseInt(matches[1]);
-			var mask = matches[2];
-
-			$scope.data.globalOperations.push({
-				__type: 'xor_bitpos',
-				pos: pos,
-				mask: mask
-			});
-		}
-	}
-
-	function pad(num) {
-		var s = num + "";
-		while (s.length < 2) s = "0" + s;
-		return s;
-	}
-
-	function getMMBString(readaheadIndex) {
-		readaheadIndex = readaheadIndex || 0;
-		var mmb = [];
-
-		angular.forEach($scope.data.globalOperations, function(op, i) {
-			if (op.__type == 'xor_bitpos') {
-				var pos = op.pos;
-				if (op == $scope.lastCommandChanged.op && $scope.lastCommandChanged) {
-					pos += $scope.lastCommandChanged.delta*readaheadIndex;
-				};
-				mmb.push('X:' + pos + ':' + op.mask);
-			};
-		});
-
-		angular.forEach($scope.data.macroBlockOperations, function (row, l) {
-			if (row) {
-				angular.forEach(row, function (op, c) {
-					if (op) {
-						if (op.__type == 'macro_block_op') {
-							var components = [l, c, op.pos, op.l1, op.l2, op.l3, op.l4, op.c1, op.c2];
-							if (op == $scope.lastCommandChanged.op) {
-								for (var i = 0; i < components.length; i++) {
-									if (components[i] && $scope.lastCommandChanged) {
-										components[i] += $scope.lastCommandChanged.delta[i] * readaheadIndex;
-									}
-								};
-							}
-							var command = components.join(":");
-							mmb.push(command.replace(new RegExp(":+$"), ""));
-						};
-					};
-				});
-			}
-		});
-
-		return mmb.join(",");
-	}
-
-	$scope.$watch('data.globalOperations', function (newVal, oldVal) {
-		removeEmptyMacroblocks();
-		if (allOperationsValid()) {
-			$scope.updateImage();
-		}
-	}, true);
-
-	$scope.$watch('data.macroBlockOperations', function (newVal, oldVal) {
-		if (allOperationsValid()) {
-			$scope.updateImage();
-		}
-	}, true);
-
-	function allOperationsValid() {
-		for (x = 0; x < $scope.data.globalOperations.length; x++) {
-			if ($scope.data.globalOperations[x].__type == 'xor_bitpos') {
-				if (isNaN(parseInt($scope.data.globalOperations[x].pos)) || parseInt($scope.data.globalOperations[x].pos) < 0) {
-					$scope.data.globalOperations[x].__valid = false;
-					return false;
-				}
-
-				if (! /^[0-9a-f]{1,2}$/i .test($scope.data.globalOperations[x].mask)) {
-					$scope.data.globalOperations[x].__valid = false;
-					return false;
-				}
-
-				$scope.data.globalOperations[x].__valid = true;
-			}
-		}
-
-		for (y = 0; y < $scope.data.macroBlockOperations.length; y++) {
-		
-			if (!$scope.data.macroBlockOperations[y]) {
-				continue;
-			}
-
-			for (x = 0; x < $scope.data.macroBlockOperations[y].length; x++) {
-				if (!$scope.data.macroBlockOperations[y][x]) {
-					continue;
-				}
-
-				if ($scope.data.macroBlockOperations[y][x].__type == 'macro_block_op') {
-					
-					if (parseInt($scope.data.macroBlockOperations[y][x].x) < 0) {
-						$scope.data.macroBlockOperations[y][x].__valid = false;
-						return false;
-					}
-
-					if (parseInt($scope.data.macroBlockOperations[y][x].y) < 0) {
-						$scope.data.macroBlockOperations[y][x].__valid = false;
-						return false;
-					}
-
-					if (isNaN(parseInt($scope.data.macroBlockOperations[y][x].pos)) || parseInt($scope.data.macroBlockOperations[y][x].pos) < -2) {
-						$scope.data.macroBlockOperations[y][x].__valid = false;
-						return false;
-					}
-
-					if ($scope.data.macroBlockOperations[y][x].l1 != undefined && $scope.data.macroBlockOperations[y][x].l1 != null && isNaN(parseInt($scope.data.macroBlockOperations[y][x].l1))) {
-						$scope.data.macroBlockOperations[y][x].__valid = false;
-						return false;
-					}
-
-					if ($scope.data.macroBlockOperations[y][x].l2 != undefined && $scope.data.macroBlockOperations[y][x].l2 != null && isNaN(parseInt($scope.data.macroBlockOperations[y][x].l2))) {
-						$scope.data.macroBlockOperations[y][x].__valid = false;
-						return false;
-					}
-
-					if ($scope.data.macroBlockOperations[y][x].l3 != undefined && $scope.data.macroBlockOperations[y][x].l3 != null && isNaN(parseInt($scope.data.macroBlockOperations[y][x].l3))) {
-						$scope.data.macroBlockOperations[y][x].__valid = false;
-						return false;
-					}
-
-					if ($scope.data.macroBlockOperations[y][x].l4 != undefined && $scope.data.macroBlockOperations[y][x].l4 != null && isNaN(parseInt($scope.data.macroBlockOperations[y][x].l4))) {
-						$scope.data.macroBlockOperations[y][x].__valid = false;
-						return false;
-					}
-
-					if ($scope.data.macroBlockOperations[y][x].c1 != undefined && $scope.data.macroBlockOperations[y][x].c1 != null && isNaN(parseInt($scope.data.macroBlockOperations[y][x].c1))) {
-						$scope.data.macroBlockOperations[y][x].__valid = false;
-						return false;
-					}
-
-					if ($scope.data.macroBlockOperations[y][x].c2 != undefined && $scope.data.macroBlockOperations[y][x].c2 != null && isNaN(parseInt($scope.data.macroBlockOperations[y][x].c2))) {
-						$scope.data.macroBlockOperations[y][x].__valid = false;
-						return false;
-					}
-
-					$scope.data.macroBlockOperations[y][x].__valid = true;
-				}
-			}
-		}
-
-		return true;
-	}
 
 	$scope.addInvertBits = function () {
 		removeEmptyMacroblocks();
-		$scope.data.globalOperations.push({
+		$scope.data.mmb.globalOperations.push({
 			__type: 'xor_bitpos',
 			mask: '1'
 		});
@@ -533,17 +504,17 @@ function AppController($scope, $q, imgService, preloader) {
 	$scope.getMacroblockOperations = function () {
 		var ret = [];
 
-		for (y = 0; y < $scope.data.macroBlockOperations.length; y++) {
-			if (!$scope.data.macroBlockOperations[y]) {
+		for (y = 0; y < $scope.data.mmb.macroblockOperations.length; y++) {
+			if (!$scope.data.mmb.macroblockOperations[y]) {
 				continue;
 			}
 
-			for (x = 0; x < $scope.data.macroBlockOperations[y].length; x++) {
-				if (!$scope.data.macroBlockOperations[y][x]) {
+			for (x = 0; x < $scope.data.mmb.macroblockOperations[y].length; x++) {
+				if (!$scope.data.mmb.macroblockOperations[y][x]) {
 					continue;
 				}
 
-				ret.push($scope.data.macroBlockOperations[y][x]);
+				ret.push($scope.data.mmb.macroblockOperations[y][x]);
 			}
 		}
 
@@ -551,17 +522,17 @@ function AppController($scope, $q, imgService, preloader) {
 	};
 
 	$scope.showMb = function (op) {
-		for (y = 0; y < $scope.data.macroBlockOperations.length; y++) {
-			if (!$scope.data.macroBlockOperations[y]) {
+		for (y = 0; y < $scope.data.mmb.macroblockOperations.length; y++) {
+			if (!$scope.data.mmb.macroblockOperations[y]) {
 				continue;
 			}
 
-			for (x = 0; x < $scope.data.macroBlockOperations[y].length; x++) {
-				if (!$scope.data.macroBlockOperations[y][x]) {
+			for (x = 0; x < $scope.data.mmb.macroblockOperations[y].length; x++) {
+				if (!$scope.data.mmb.macroblockOperations[y][x]) {
 					continue;
 				}
 
-				$scope.data.macroBlockOperations[y][x].__visible = false;
+				$scope.data.mmb.macroblockOperations[y][x].__visible = false;
 			}
 		}
 
@@ -574,65 +545,65 @@ function AppController($scope, $q, imgService, preloader) {
 	};
 
 	$scope.removeGlobalOp = function (op) {
-		if ($scope.data.globalOperations.indexOf(op) > -1) {
-			$scope.data.globalOperations.splice($scope.data.globalOperations.indexOf(op), 1);	
+		if ($scope.data.mmb.globalOperations.indexOf(op) > -1) {
+			$scope.data.mmb.globalOperations.splice($scope.data.mmb.globalOperations.indexOf(op), 1);	
 		}
 	};
 
 	$scope.removeMb = function (op) {
-		if (!$scope.data.macroBlockOperations[op.y]) {
+		if (!$scope.data.mmb.macroblockOperations[op.y]) {
 			return;
 		}
 
-		if (!$scope.data.macroBlockOperations[op.y][op.x]) {
+		if (!$scope.data.mmb.macroblockOperations[op.y][op.x]) {
 			return;
 		}
 
-		$scope.data.macroBlockOperations[op.y][op.x] = undefined;
+		$scope.data.mmb.macroblockOperations[op.y][op.x] = undefined;
 	};
 	
 	function removeEmptyMacroblocks() {
 		// Remove any completely empty macroblock operations
-		for (y = 0; y < $scope.data.macroBlockOperations.length; y++) {
-			if (!$scope.data.macroBlockOperations[y]) {
+		for (y = 0; y < $scope.data.mmb.macroblockOperations.length; y++) {
+			if (!$scope.data.mmb.macroblockOperations[y]) {
 				continue;
 			}
 
-			for (x = 0; x < $scope.data.macroBlockOperations[y].length; x++) {
-				if (!$scope.data.macroBlockOperations[y][x]) {
+			for (x = 0; x < $scope.data.mmb.macroblockOperations[y].length; x++) {
+				if (!$scope.data.mmb.macroblockOperations[y][x]) {
 					continue;
 				}
 
-				if ($scope.data.macroBlockOperations[y][x].__type == 'macro_block_op') {
-					if ($scope.data.macroBlockOperations[y][x].pos != null && $scope.data.macroBlockOperations[y][x].pos != '') {
+				if ($scope.data.mmb.macroblockOperations[y][x].__type == 'macro_block_op') {
+					if ($scope.data.mmb.macroblockOperations[y][x].pos != null && $scope.data.mmb.macroblockOperations[y][x].pos != '') {
 						continue;
 					}
 
-					if ($scope.data.macroBlockOperations[y][x].l1 != null && $scope.data.macroBlockOperations[y][x].l1 != '') {
+					if ($scope.data.mmb.macroblockOperations[y][x].l1 != null && $scope.data.mmb.macroblockOperations[y][x].l1 != '') {
 						continue;
 					}
 
-					if ($scope.data.macroBlockOperations[y][x].l2 != null && $scope.data.macroBlockOperations[y][x].l2 != '') {
+					if ($scope.data.mmb.macroblockOperations[y][x].l2 != null && $scope.data.mmb.macroblockOperations[y][x].l2 != '') {
 						continue;
 					}
 
-					if ($scope.data.macroBlockOperations[y][x].l3 != null && $scope.data.macroBlockOperations[y][x].l3 != '') {
+					if ($scope.data.mmb.macroblockOperations[y][x].l3 != null && $scope.data.mmb.macroblockOperations[y][x].l3 != '') {
 						continue;
 					}
 
-					if ($scope.data.macroBlockOperations[y][x].l4 != null && $scope.data.macroBlockOperations[y][x].l4 != '') {
+					if ($scope.data.mmb.macroblockOperations[y][x].l4 != null && $scope.data.mmb.macroblockOperations[y][x].l4 != '') {
 						continue;
 					}
 
-					if ($scope.data.macroBlockOperations[y][x].c1 != null && $scope.data.macroBlockOperations[y][x].c1 != '') {
+					if ($scope.data.mmb.macroblockOperations[y][x].c1 != null && $scope.data.mmb.macroblockOperations[y][x].c1 != '') {
 						continue;
 					}
 
-					if ($scope.data.macroBlockOperations[y][x].c2 != null && $scope.data.macroBlockOperations[y][x].c2 != '') {
+					if ($scope.data.mmb.macroblockOperations[y][x].c2 != null && $scope.data.mmb.macroblockOperations[y][x].c2 != '') {
 						continue;
 					}
 
-					$scope.data.macroBlockOperations[y][x] = undefined;
+					$scope.data.mmb.macroblockOperations[y][x] = undefined;
 				}
 			}
 		}
@@ -645,33 +616,33 @@ function AppController($scope, $q, imgService, preloader) {
 			return;
 		}
 
-		for (y = 0; y < $scope.data.macroBlockOperations.length; y++) {
-			if (!$scope.data.macroBlockOperations[y]) {
+		for (y = 0; y < $scope.data.mmb.macroblockOperations.length; y++) {
+			if (!$scope.data.mmb.macroblockOperations[y]) {
 				continue;
 			}
 
-			for (x = 0; x < $scope.data.macroBlockOperations[y].length; x++) {
-				if (!$scope.data.macroBlockOperations[y][x]) {
+			for (x = 0; x < $scope.data.mmb.macroblockOperations[y].length; x++) {
+				if (!$scope.data.mmb.macroblockOperations[y][x]) {
 					continue;
 				}
 
-				$scope.data.macroBlockOperations[y][x].__visible = false;
+				$scope.data.mmb.macroblockOperations[y][x].__visible = false;
 			}
 		}
 
-		if (!$scope.data.macroBlockOperations[newVal.y]) {
-			$scope.data.macroBlockOperations[newVal.y] = [];
+		if (!$scope.data.mmb.macroblockOperations[newVal.y]) {
+			$scope.data.mmb.macroblockOperations[newVal.y] = [];
 		}
 
-		if (!$scope.data.macroBlockOperations[newVal.y][newVal.x]) {
-			$scope.data.macroBlockOperations[newVal.y][newVal.x] = {
+		if (!$scope.data.mmb.macroblockOperations[newVal.y][newVal.x]) {
+			$scope.data.mmb.macroblockOperations[newVal.y][newVal.x] = {
 				__type: 'macro_block_op',
 				__visible: true,
 				x: newVal.x,
 				y: newVal.y
 			};
 		} else {
-			$scope.data.macroBlockOperations[newVal.y][newVal.x].__visible = true;
+			$scope.data.mmb.macroblockOperations[newVal.y][newVal.x].__visible = true;
 		}
 	});
 
@@ -713,6 +684,12 @@ function AppController($scope, $q, imgService, preloader) {
 
 		var block = $scope.data.currentImageInfo[y][x];
 
+		function pad(num) {
+			var s = num + "";
+			while (s.length < 2) s = "0" + s;
+			return s;
+		}
+		
 		return 'MB pos/size: ' + block.s + ' ' + pad(x) + ':' + pad(y) + ':' + block.pos + ' ' + block.len;
 	};
 
