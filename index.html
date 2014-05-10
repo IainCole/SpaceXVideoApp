@@ -241,7 +241,7 @@
 				<div id="operations">
 					<div id="globalOperations">
 						<p>Invert bits</p>
-						<div ng-repeat="op in data.globalOperations">
+						<div ng-repeat="op in data.globalOperations" ng-controller="InvertBitsController">
 							<div class="op xor-bitpos cf" ng-if="op.__type == 'xor_bitpos'">
 								<div class="op-remove" ng-click="removeGlobalOp(op)">Remove</div>
 								<input class="pos" type="number" ng-model="op.pos" placeholder="pos" /> : <input class="mask" type="text" ng-model="op.mask" placeholder="mask" />
@@ -250,7 +250,7 @@
 						<input id="addInvertBits" type="submit" value="Add" ng-click="addInvertBits()" />
 					</div>
 					<p>Macroblocks</p>
-					<div class="op mb-op" ng-repeat="op in getMacroblockOperations()">
+					<div class="op mb-op" ng-repeat="op in getMacroblockOperations()" ng-controller="MacroblockController">
 						<div class="op-title" ng-click="showMb(op)">MB {{op.x}}:{{op.y}}</div>
 						<div class="op-remove" ng-click="removeMb(op)">Remove</div>
 						<div class="cf" ng-show="op.__visible">
