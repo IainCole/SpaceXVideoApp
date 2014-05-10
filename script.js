@@ -241,9 +241,9 @@ function AppController($scope, $q, imgService, preloader) {
 	$scope.$watch('data.selectedFrame', function (newVal, oldVal) {
 		if (newVal !== oldVal) {
 			if (newVal.defaultMmb) {
-				$scope.data.mmb = newVal.defaultMmb || null;
+				$scope.data.mmb = newVal.defaultMmb || '';
 			} else {
-				$scope.data.mmb = null;
+				$scope.data.mmb = '';
 			}
 
 			$scope.parseMMB();
