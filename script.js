@@ -211,6 +211,8 @@ spacex.factory("preloader", function ($q, $rootScope) {
 
 function AppController($scope, $q, imgService, preloader) {
 	$scope.loaded = false;
+	$scope.lastCommandChanged = null;
+
 	$q.all([
 			imgService.getVersion(),
 			imgService.getFrameSet()]).then(function(result) {
@@ -278,16 +280,12 @@ function AppController($scope, $q, imgService, preloader) {
 			$scope.data.mmbForced = true;
 		}
 
-		if (mmb) {
-			mmb = '&mmb=' + mmb;
-		}
-
 		if (!$scope.data.selectedFrame) {
 			$scope.imagePath = null;
 			return;
 		}
 
-		var url = 'http://dz0bwiwndcjbh.cloudfront.net/' + $scope.data.selectedFrameSet.id + '/' + $scope.data.selectedFrame.id + '?v=' + $scope.version + mmb;
+		var url = generateURL(mmb)
 
 		if ($scope.imagePath !== url) {
 			if (!url) {
@@ -306,7 +304,20 @@ function AppController($scope, $q, imgService, preloader) {
 				$scope.data.frameLog = result;
 				parseInfo(result);
 			});
+
+			if ($scope.lastCommandChanged && $scope.lastCommandChanged.preload){
+				var readaheadMMB = getMMBString(1);
+				preloader.preloadImages([generateURL(readaheadMMB)]);
+			}
 		}
+	};
+
+	function generateURL(mmb) {
+		if (mmb) {
+			mmb = '&mmb=' + mmb;
+		}
+
+		return 'http://dz0bwiwndcjbh.cloudfront.net/' + $scope.data.selectedFrameSet.id + '/' + $scope.data.selectedFrame.id + '?v=' + $scope.version + mmb;
 	};
 
 	var mbOp = /^([0-9]+):([0-9]+):(-1|-2|[0-9]+)(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?$/ ;
@@ -377,18 +388,29 @@ function AppController($scope, $q, imgService, preloader) {
 		return s;
 	}
 
-	function getMMBString() {
+	function getMMBString(readaheadIndex) {
+		readaheadIndex = readaheadIndex || 0;
 		var mmb = [];
 
 		angular.forEach($scope.data.globalOperations, function(op, i) {
-			if (op.__type == 'xor_bitpos') mmb.push('X:' + op.pos + ':' + op.mask);
+			if (op.__type == 'xor_bitpos') {
+				var pos = op.pos;
+				if (op == $scope.lastCommandChanged.op && $scope.lastCommandChanged) {
+					pos += $scope.lastCommandChanged.delta*readaheadIndex;
+				};
+				mmb.push('X:' + pos + ':' + op.mask);
+			};
 		});
 
 		angular.forEach($scope.data.macroBlockOperations, function(row, l) {
 			if (row) angular.forEach(row, function(op, c) {
 				if (op) {
 	                                if (op.__type == 'macro_block_op') {
-						var components = [pad(l), pad(c), op.pos, op.l1, op.l2, op.l3, op.l4, op.c1, op.c2];
+						var components = [l, c, op.pos, op.l1, op.l2, op.l3, op.l4, op.c1, op.c2];
+						if (op == $scope.lastCommandChanged.op) for(var i=0; i<components.length; i++) {
+							if (components[i] && $scope.lastCommandChanged)
+								components[i] += $scope.lastCommandChanged.delta[i]*readaheadIndex;
+						};
 						var command = components.join(":");
 						mmb.push(command.replace(new RegExp(":+$"), ""))
 					};
@@ -728,4 +750,33 @@ function AppController($scope, $q, imgService, preloader) {
 
 		return 'MB pos/size: ' + block.s + ' ' + pad(x) + ':' + pad(y) + ':' + block.pos + ' ' + block.len;
 	};
+
+	$scope.$on("commandChanged", function (event) {
+		var lastCommandChanged = event.targetScope;
+		$scope.lastCommandChanged = lastCommandChanged;
+	});
 }
+
+spacex.controller('InvertBitsController', function ($scope) {
+	$scope.$watch('op.pos', function (newValue, oldValue) {
+		var delta = newValue-oldValue;
+		$scope.preload = Math.abs(delta)==1;
+                $scope.delta = delta;
+		$scope.$emit("commandChanged");
+	});
+});
+
+spacex.controller('MacroblockController', function ($scope) {
+	$scope.$watchCollection('[op.x, op.y, op.pos, op.l1, op.l2, op.l3, op.l4, op.c1, op.c2]', function (newValues, oldValues) {
+		var preload = false;
+		var deltas = [];
+		for(var i=0; i<newValues.length; i++) {
+			var delta = newValues[i]-oldValues[i] || 0;
+			preload = preload || Math.abs(delta)==1;
+			deltas.push(delta);
+		};
+		$scope.preload = preload;
+		$scope.delta = deltas;
+		$scope.$emit("commandChanged");
+	});
+});
