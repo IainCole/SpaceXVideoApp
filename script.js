@@ -446,6 +446,12 @@ function AppController($scope, $q, imgService, preloader) {
 		}
 	}, true);
 
+	$scope.$watch('data.mmb.globalOperations', function (newVal, oldVal) {
+		removeEmptyMacroblocks();
+	}, true);
+	
+	
+
 	var currentImageUrl;
 
 	$scope.updateImage = function () {
