@@ -24,6 +24,12 @@
 		clear: both;
 	}
 	
+	p 
+	{
+		margin: 0;
+		padding-bottom: 5px;
+	}
+	
 	#imageMask
 	{
 		width: 704px;
@@ -45,12 +51,45 @@
 	{
 		border: 1px solid red;
 	}
+	
+	#imageLegend 
+	{
+		position:absolute;
+		top:0;
+		left:0;
+	}
+	
+	#imageLegend .blockError
+	{
+		width:14px;
+		height:14px;
+		border:1px solid yellow;
+		position:absolute;
+	}
+	
 	#imageInfo 
 	{
 		height: 15px;
 		margin-bottom: 6px;
 		width: 702px;
 		position:relative;
+		float:left;
+	}
+	
+	
+	#imageInfo p
+	{
+		padding:0;
+	}
+		
+	#errorOverview
+	{
+		float:right;
+	}
+	
+	#errorOverview input
+	{
+		margin: 0 6px 0 4px;
 	}
 	
 	#spinner 
@@ -120,12 +159,6 @@
 		resize:vertical;
 	}
 	
-	p 
-	{
-		margin: 0;
-		padding-bottom: 5px;
-	}
-	
 	#imgLink
 	{
 		float: left;
@@ -186,37 +219,37 @@
 	{
 		float:left;
 		clear:left;
-		width:109px;
+		width:107px;
 	}
 	
 	.mb-op .l2
 	{
 		float:left;
-		width:109px;
+		width:107px;
 	}
 	
 	.mb-op .l3
 	{
 		float:left;
-		width:109px;
+		width:107px;
 	}
 	
 	.mb-op .l4
 	{
 		float:left;
-		width:109px;
+		width:107px;
 	}
 	
 	.mb-op .c1
 	{
 		float:left;
-		width:109px;
+		width:107px;
 	}
 	
 	.mb-op .c2
 	{
 		float:left;
-		width:109px;
+		width:107px;
 	}
 	
 </style>
@@ -231,12 +264,20 @@
 			</select>
 			<div id="selectedFrame" class="cf" ng-if="data.selectedFrame !== null">
 				<textarea ng-model="data.mmb" id="mmb" parse-mmb placeholder="paste an -mmb here or click on the image to add macroblock operations, invert bits operations can be added in the right bar"></textarea>
-				<div id="imageInfo">
-					<p ng-if="data.selectedMacroBlock">MB {{data.selectedMacroBlock.x}}:{{data.selectedMacroBlock.y}} - {{getMBLogInfo(data.selectedMacroBlock.x, data.selectedMacroBlock.y)}}{{getMBErrorInfo(data.selectedMacroBlock.x, data.selectedMacroBlock.y)}}</p>
-					<div id="spinner" ng-class="{true: 'visible'}[showSpinner]"></div>
+				<div class="cf">
+					<div id="imageInfo">
+						<p ng-if="data.selectedMacroBlock">MB {{data.selectedMacroBlock.x}}:{{data.selectedMacroBlock.y}} - {{getMBLogInfo(data.selectedMacroBlock.x, data.selectedMacroBlock.y)}}{{getMBErrorInfo(data.selectedMacroBlock.x, data.selectedMacroBlock.y)}}</p>
+						<div id="spinner" ng-class="{true: 'visible'}[showSpinner]"></div>
+					</div>
+					<div id="errorOverview">
+						<label for="showLegend">Show Legend</label><input id="showLegend" type="checkbox" ng-model="showLegend" /> Num Errors: {{data.errorCount}}
+					</div>
 				</div>
 				<div id="imageMask" macroblock-selector="data">
 					<img src="{{imagePath}}" width="703" height="480" />
+					<div id="imageLegend" ng-if="showLegend" image-legend>
+						
+					</div>
 				</div>
 				<div id="operations">
 					<div id="globalOperations">

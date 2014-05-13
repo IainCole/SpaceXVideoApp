@@ -273,6 +273,27 @@ spacex.directive('macroblockSelector', ['$compile', function ($compile) {
 	};
 } ]);
 
+spacex.directive('imageLegend', ['$compile', function ($compile) {
+	return {
+		link: function ($scope, element, attributes) {
+			$scope.$watch('data.currentImageError', function (newVal) {
+				element.find('.blockError').remove();
+
+				for (var y = 0; y < newVal.length; y++) {
+					if (newVal[y]) {
+						for (var x = 0; x < newVal[y].length; x++) {
+							if (newVal[y][x]) {
+								var errDiv = $compile('<div class="blockError"></div>')($scope);
+								errDiv.css({ left: x * 16, top: y * 16 });
+								element.append(errDiv);
+							}
+						}
+					}
+				}
+			}, true);
+		}
+	};
+} ]);
 
 
 spacex.factory('imgService', ['$http', '$q', function ($http, $q) {
@@ -424,7 +445,8 @@ function AppController($scope, $q, imgService, preloader) {
 		selectedFrame: null,
 		selectedMacroBlock: null,
 		currentImageInfo: [],
-		currentImageError: []
+		currentImageError: [],
+		errorCount: 0
 	};
 
 	$scope.$watch('data.selectedFrameSet', function (newVal, oldVal) {
@@ -674,11 +696,15 @@ function AppController($scope, $q, imgService, preloader) {
 		}
 
 		$scope.data.currentImageError[y][x] += ', ' + err;
+		$scope.data.errorCount++;
 	}
 	
 	function parseInfo(info) {
 		var lines = info.split('\n');
 		$scope.data.currentImageInfo = [];
+		$scope.data.currentImageError = [];
+		$scope.data.errorCount = 0;
+		
 		for (var i = 0; i < lines.length; i++) {
 			if (infoRe.test(lines[i])) {
 				var match = infoRe.exec(lines[i]);
