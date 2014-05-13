@@ -111,6 +111,72 @@
           "defaultMmb": null
         }
       ]
+    },
+ {
+      "id": 3,
+      "name": "fixed_edit5.ts",
+      "frames": [
+        {
+          "id": 1,
+          "defaultMmb": null
+        },
+        {
+          "id": 2,
+          "defaultMmb": null
+        },
+        {
+          "id": 3,
+          "defaultMmb": null
+        },
+        {
+          "id": 4,
+          "defaultMmb": null
+        },
+        {
+          "id": 5,
+          "defaultMmb": null
+        },
+        {
+          "id": 6,
+          "defaultMmb": null
+        },
+        {
+          "id": 7,
+          "defaultMmb": null
+        },
+        {
+          "id": 8,
+          "defaultMmb": null
+        },
+        {
+          "id": 9,
+          "defaultMmb": null
+        },
+        {
+          "id": 10,
+          "defaultMmb": null
+        },
+        {
+          "id": 11,
+          "defaultMmb": null
+        },
+        {
+          "id": 12,
+          "defaultMmb": null
+        },
+        {
+          "id": 13,
+          "defaultMmb": null
+        },
+        {
+          "id": 14,
+          "defaultMmb": null
+        },
+        {
+          "id": 15,
+          "defaultMmb": null
+        }
+      ]
     }
   ]
 }
