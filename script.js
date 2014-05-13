@@ -261,6 +261,10 @@ spacex.directive('macroblockSelector', ['$compile', function ($compile) {
 					top: imgTop * 16,
 					left: imgLeft * 16
 				});
+
+				if ($scope.data.currentImageError[imgTop] && $scope.data.currentImageError[imgTop][imgLeft]) {
+					
+				}
 			});
 		},
 		scope: {
@@ -419,7 +423,8 @@ function AppController($scope, $q, imgService, preloader) {
 		selectedFrameSet: null,
 		selectedFrame: null,
 		selectedMacroBlock: null,
-		currentImageInfo: []
+		currentImageInfo: [],
+		currentImageError: []
 	};
 
 	$scope.$watch('data.selectedFrameSet', function (newVal, oldVal) {
@@ -653,6 +658,23 @@ function AppController($scope, $q, imgService, preloader) {
 	});
 
 	var infoRe = /MB pos\/size: (-?[0-9]) ([0-9]+):([0-9]+):([0-9]+) ([0-9]+)/;
+	var dcClippedRe = /dc clipped at ([0-9]+)x([0-9]+)/;
+	var cbpcDamagedRe = /I cbpc damaged at ([0-9]+) ([0-9]+) [0-9]+/;
+	var acTexDamagedRe = /ac-tex damaged at ([0-9]+) ([0-9]+) [0-9]+/;
+	var dQuantRe = /dquant at ([0-9]+) ([0-9]+)/;
+	var stuffingRe = /stuffing at ([0-9]+) ([0-9]+)/;
+	
+	function addImageError(x, y, err) {
+		if (!$scope.data.currentImageError[y]) {
+			$scope.data.currentImageError[y] = [];
+		}
+
+		if (!$scope.data.currentImageError[y][x]) {
+			$scope.data.currentImageError[y][x] = '';
+		}
+
+		$scope.data.currentImageError[y][x] += ', ' + err;
+	}
 	
 	function parseInfo(info) {
 		var lines = info.split('\n');
@@ -675,6 +697,31 @@ function AppController($scope, $q, imgService, preloader) {
 					pos: pos,
 					len: len
 				};
+			} else if(dcClippedRe.test(lines[i])) {
+				var match = dcClippedRe.exec(lines[i]);
+				var x = parseInt(match[1]);
+				var y = parseInt(match[2]);
+				addImageError(x, y, match[0]);
+			} else if (cbpcDamagedRe.test(lines[i])) {
+				var match = cbpcDamagedRe.exec(lines[i]);
+				var x = parseInt(match[1]);
+				var y = parseInt(match[2]);
+				addImageError(x, y, match[0]);
+			} else if (acTexDamagedRe.test(lines[i])) {
+				var match = acTexDamagedRe.exec(lines[i]);
+				var x = parseInt(match[1]);
+				var y = parseInt(match[2]);
+				addImageError(x, y, match[0]);
+			} else if (dQuantRe.test(lines[i])) {
+				var match = dQuantRe.exec(lines[i]);
+				var x = parseInt(match[1]);
+				var y = parseInt(match[2]);
+				addImageError(x, y, match[0]);
+			} else if (stuffingRe.test(lines[i])) {
+				var match = stuffingRe.exec(lines[i]);
+				var x = parseInt(match[1]);
+				var y = parseInt(match[2]);
+				addImageError(x, y, match[0]);
 			}
 		}
 	}
@@ -697,6 +744,18 @@ function AppController($scope, $q, imgService, preloader) {
 		}
 		
 		return 'MB pos/size: ' + block.s + ' ' + pad(x) + ':' + pad(y) + ':' + block.pos + ' ' + block.len;
+	};
+
+	$scope.getMBErrorInfo = function (x, y) {
+		if (!$scope.data.currentImageError[y]) {
+			return '';
+		}
+
+		if (!$scope.data.currentImageError[y][x]) {
+			return '';
+		}
+
+		return $scope.data.currentImageError[y][x];
 	};
 
 	$scope.$on("commandChanged", function (event) {

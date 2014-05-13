@@ -232,7 +232,7 @@
 			<div id="selectedFrame" class="cf" ng-if="data.selectedFrame !== null">
 				<textarea ng-model="data.mmb" id="mmb" parse-mmb placeholder="paste an -mmb here or click on the image to add macroblock operations, invert bits operations can be added in the right bar"></textarea>
 				<div id="imageInfo">
-					<p ng-if="data.selectedMacroBlock">MB {{data.selectedMacroBlock.x}}:{{data.selectedMacroBlock.y}} - {{getMBLogInfo(data.selectedMacroBlock.x, data.selectedMacroBlock.y)}}</p>
+					<p ng-if="data.selectedMacroBlock">MB {{data.selectedMacroBlock.x}}:{{data.selectedMacroBlock.y}} - {{getMBLogInfo(data.selectedMacroBlock.x, data.selectedMacroBlock.y)}}{{getMBErrorInfo(data.selectedMacroBlock.x, data.selectedMacroBlock.y)}}</p>
 					<div id="spinner" ng-class="{true: 'visible'}[showSpinner]"></div>
 				</div>
 				<div id="imageMask" macroblock-selector="data">
