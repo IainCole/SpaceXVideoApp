@@ -321,7 +321,7 @@ spacex.factory('imgService', ['$http', '$q', function ($http, $q) {
 		getVersion: function () {
 			return $http({
 				method: 'GET',
-				url: basePath + '/v'
+				url: 'http://ec2-54-187-31-68.us-west-2.compute.amazonaws.com/v' // Bypass the CDN otherwise the version gets cached which kinda defeats the object
 			}).then(function (result) {
 				return result.data.version;
 			});
