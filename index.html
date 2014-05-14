@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8" />
-	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.min.js"></script>
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.min.js"></script>
 	<script type="text/javascript" src="./script.js"></script>
 </head>
 <style type="text/css">
@@ -139,9 +139,10 @@
 		background-color: #FAFAFA;
 		border: 1px solid #DEDEDE;
 		float: right;
-		min-height: 865px;
+		height: 647px;
 		padding: 10px;
 		width: 255px;
+		overflow-y:scroll;
 	}
 	
 	#globalOperations 
@@ -153,7 +154,7 @@
 	{
 		border: 1px solid #DEDEDE;
 		float: left;
-		height: 400px;
+		height: 160px;
 		margin: 5px 0;
 		width: 701px;
 		resize:vertical;
@@ -200,56 +201,56 @@
 	.xor-bitpos .pos 
 	{
 		display:inline-block;
-		width:102px;
+		width:93px;
 	}
 	
 	.xor-bitpos .mask 
 	{
 		display:inline-block;
-		width:102px;
+		width:93px;
 	}
 	
 	.mb-op .pos
 	{
 		float:left;
-		width:230px;
+		width:212px;
 	}
 	
 	.mb-op .l1
 	{
 		float:left;
 		clear:left;
-		width:107px;
+		width:99px;
 	}
 	
 	.mb-op .l2
 	{
 		float:left;
-		width:107px;
+		width:99px;
 	}
 	
 	.mb-op .l3
 	{
 		float:left;
-		width:107px;
+		width:99px;
 	}
 	
 	.mb-op .l4
 	{
 		float:left;
-		width:107px;
+		width:99px;
 	}
 	
 	.mb-op .c1
 	{
 		float:left;
-		width:107px;
+		width:99px;
 	}
 	
 	.mb-op .c2
 	{
 		float:left;
-		width:107px;
+		width:99px;
 	}
 	
 </style>
@@ -291,7 +292,7 @@
 						<input id="addInvertBits" type="submit" value="Add" ng-click="addInvertBits()" />
 					</div>
 					<p>Macroblocks</p>
-					<div class="op mb-op" ng-repeat="op in getMacroblockOperations()" ng-controller="MacroblockController">
+					<div class="op mb-op" ng-repeat="op in getMacroblockOperations()" macroblock-operation>
 						<div class="op-title" ng-click="showMb(op)">MB {{op.x}}:{{op.y}}</div>
 						<div class="op-remove" ng-click="removeMb(op)">Remove</div>
 						<div class="cf" ng-show="op.__visible">

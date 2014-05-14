@@ -261,15 +261,33 @@ spacex.directive('macroblockSelector', ['$compile', function ($compile) {
 					top: imgTop * 16,
 					left: imgLeft * 16
 				});
-
-				if ($scope.data.currentImageError[imgTop] && $scope.data.currentImageError[imgTop][imgLeft]) {
-					
-				}
 			});
 		},
 		scope: {
 			data: '=macroblockSelector'
 		}
+	};
+} ]);
+
+spacex.directive('macroblockOperation', ['$compile', function ($compile) {
+	return {
+		link: function ($scope, element, attributes) {
+			$scope.$watch('op.__visible', function(newVal){
+				if ($scope.op.__selfShown) {
+					$scope.op.__selfShown = false;
+				} else if (newVal) {
+					var offsetTop = element.offset().top;
+					if(offsetTop - 100 < 0){
+						offsetTop = 0;
+					} else {
+						offsetTop = offsetTop - 100;
+					}
+					
+					$('#operations').scrollTop(offsetTop);
+				}
+			});
+		},
+		controller:'MacroblockController'
 	};
 } ]);
 
@@ -555,6 +573,9 @@ function AppController($scope, $q, imgService, preloader) {
 	};
 
 	$scope.showMb = function (op) {
+		if (op.__visible) {
+			return;
+		}
 		for (y = 0; y < $scope.data.mmb.macroblockOperations.length; y++) {
 			if (!$scope.data.mmb.macroblockOperations[y]) {
 				continue;
@@ -570,6 +591,8 @@ function AppController($scope, $q, imgService, preloader) {
 		}
 
 		op.__visible = true;
+		op.__selfShown = true;
+
 		
 		$scope.data.selectedMacroBlock = {
 			x: op.x,
@@ -676,6 +699,7 @@ function AppController($scope, $q, imgService, preloader) {
 			};
 		} else {
 			$scope.data.mmb.macroblockOperations[newVal.y][newVal.x].__visible = true;
+			$scope.data.mmb.macroblockOperations[newVal.y][newVal.x].__selfShown = true;
 		}
 	});
 
