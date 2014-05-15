@@ -93,7 +93,11 @@ function formatMMB(val, lastCommandChanged, readaheadIndex) {
 			angular.forEach(row, function (op, c) {
 				if (op) {
 					if (op.__type == 'macro_block_op' && opIsValid(op)) {
-						var components = [c, l, op.pos, op.l1, op.l2, op.l3, op.l4, op.c1, op.c2, op.dir];
+						var command = c + ':' + l + ':' + op.pos;
+
+
+						var components = [op.l1, op.l2, op.l3, op.l4, op.c1, op.c2];
+
 						if (lastCommandChanged && op == lastCommandChanged.op) {
 							for (var i = 0; i < components.length; i++) {
 								if (components[i] && lastCommandChanged) {
@@ -101,8 +105,50 @@ function formatMMB(val, lastCommandChanged, readaheadIndex) {
 								}
 							};
 						}
-						var command = components.join(":");
-						mmb.push(command.replace(new RegExp(":+$"), ""));
+
+						if (op.dir && !(op.l1 || op.l2 || op.l3 || op.l4 || op.c1 || op.c2)) {
+							command += '::' + op.dir;
+						} else {
+							var max = 0;
+
+							if (!op.dir) {
+								if (op.l1) {
+									max = 1;
+								}
+
+								if (op.l2) {
+									max = 2;
+								}
+
+								if (op.l3) {
+									max = 3;
+								}
+
+								if (op.l4) {
+									max = 4;
+								}
+
+								if (op.c1) {
+									max = 5;
+								}
+
+								if (op.c2) {
+									max = 6;
+								}
+							} else {
+								max = 6;
+							}
+
+							for (var h = 0; h < max; h++) {
+								command += ':' + (components[h] ? components[h] : '');
+							}
+
+							if (op.dir) {
+								command += ':' + op.dir;
+							}
+						}
+
+						mmb.push(command);
 					};
 				};
 			});
@@ -113,16 +159,34 @@ function formatMMB(val, lastCommandChanged, readaheadIndex) {
 }
 
 var mbOp = /^([0-9]+):([0-9]+):(-1|-2|[0-9]+)(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?$/;
+var mbOpDirOnly = /^([0-9]+):([0-9]+):(-1|-2|[0-9]+)::([0-9]+)$/;
 var reXor = /^x:([0-9]+):([0-9a-f]{1,2})$/i;
 
 function parseMMBPart(op) {
-	if (mbOp.test(op)) {
+
+	if (mbOpDirOnly.test(op)) {
+		var matches = mbOpDirOnly.exec(op);
+		var x = parseInt(matches[1]);
+		var y = parseInt(matches[2]);
+		var pos = parseInt(matches[3]);
+		var dir = parseInt(matches[4]);
+
+		var ret = {
+			__type: 'macro_block_op',
+			x: x,
+			y: y,
+			pos: pos,
+			dir: dir
+		};
+
+		return ret;
+	} else if (mbOp.test(op)) {
 		var matches = mbOp.exec(op);
 		var x = parseInt(matches[1]);
 		var y = parseInt(matches[2]);
 		var pos = parseInt(matches[3]);
 
-		var op = {
+		var ret = {
 			__type: 'macro_block_op',
 			x: x,
 			y: y,
@@ -130,33 +194,33 @@ function parseMMBPart(op) {
 		};
 
 		if (matches[4]) {
-			op.l1 = parseInt(matches[4]);
+			ret.l1 = parseInt(matches[4]);
 		}
 
 		if (matches[5]) {
-			op.l2 = parseInt(matches[5]);
+			ret.l2 = parseInt(matches[5]);
 		}
 
 		if (matches[6]) {
-			op.l3 = parseInt(matches[6]);
+			ret.l3 = parseInt(matches[6]);
 		}
 		if (matches[7]) {
-			op.l4 = parseInt(matches[7]);
+			ret.l4 = parseInt(matches[7]);
 		}
 
 		if (matches[8]) {
-			op.c1 = parseInt(matches[8]);
+			ret.c1 = parseInt(matches[8]);
 		}
 
 		if (matches[9]) {
-			op.c2 = parseInt(matches[9]);
+			ret.c2 = parseInt(matches[9]);
 		}
 
 		if (matches[10]) {
-			op.dir = parseInt(matches[10]);
+			ret.dir = parseInt(matches[10]);
 		}
 
-		return op;
+		return ret;
 	} else if (reXor.test(op)) {
 		var matches = reXor.exec(op);
 		var pos = parseInt(matches[1]);
