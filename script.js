@@ -711,7 +711,9 @@ function AppController($scope, $q, imgService, preloader) {
 		}
 	});
 
-	var infoRe = /MB pos\/size: (-?[0-9]) ([0-9]+):([0-9]+):([0-9]+) ([0-9]+)/;
+	//MB pos/size: 0 00:00:550 119 dc: 162 169 161 169 - 132 124
+
+	var infoRe = /MB pos\/size: (-?[0-9]) ([0-9]+):([0-9]+):([0-9]+) ([0-9]+) dc: ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+) - ([0-9]+) ([0-9]+)/;
 	var dcClippedRe = /dc clipped at ([0-9]+)x([0-9]+)/;
 	var cbpcDamagedRe = /I cbpc damaged at ([0-9]+) ([0-9]+) [0-9]+/;
 	var acTexDamagedRe = /ac-tex damaged at ([0-9]+) ([0-9]+) [0-9]+/;
@@ -746,6 +748,13 @@ function AppController($scope, $q, imgService, preloader) {
 				var pos = parseInt(match[4]);
 				var len = parseInt(match[5]);
 
+				var dc1 = parseInt(match[6]);
+				var dc2 = parseInt(match[7]);
+				var dc3 = parseInt(match[8]);
+				var dc4 = parseInt(match[9]);
+				var dc5 = parseInt(match[10]);
+				var dc6 = parseInt(match[11]);
+				
 				if (!$scope.data.currentImageInfo[y]) {
 					$scope.data.currentImageInfo[y] = [];
 				}
@@ -753,7 +762,13 @@ function AppController($scope, $q, imgService, preloader) {
 				$scope.data.currentImageInfo[y][x] = {
 					s: s,
 					pos: pos,
-					len: len
+					len: len,
+					dc1: dc1,
+					dc2: dc2,
+					dc3: dc3,
+					dc4: dc4,
+					dc5: dc5,
+					dc6: dc6
 				};
 			} else if(dcClippedRe.test(lines[i])) {
 				var match = dcClippedRe.exec(lines[i]);
@@ -800,8 +815,8 @@ function AppController($scope, $q, imgService, preloader) {
 			while (s.length < 2) s = "0" + s;
 			return s;
 		}
-		
-		return 'MB pos/size: ' + block.s + ' ' + pad(x) + ':' + pad(y) + ':' + block.pos + ' ' + block.len;
+
+		return 'MB pos/size: ' + block.s + ' ' + pad(x) + ':' + pad(y) + ':' + block.pos + ' ' + block.len + ' dc: ' + block.dc1 + ' ' + block.dc2 + ' ' + block.dc3 + ' ' + block.dc4 + ' - ' + block.dc5 + ' ' + block.dc6;
 	};
 
 	$scope.getMBErrorInfo = function (x, y) {

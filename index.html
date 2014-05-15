@@ -30,6 +30,11 @@
 		padding-bottom: 5px;
 	}
 	
+	#editor-container
+	{
+		position:relative;
+	}
+	
 	#imageMask
 	{
 		width: 704px;
@@ -96,10 +101,10 @@
 	{
 		background: url("./ajax-loader.gif") no-repeat scroll center center rgba(0, 0, 0, 0);
 		position:absolute;
-		top:0;
-		right:0;
+		top:9px;
+		left:374px;
 		width:208px;
-		height:100%;
+		height:13px;
 		visibility: hidden;
 	}
 	#spinner.visible 
@@ -262,19 +267,19 @@
 </style>
 <body ng-app="spacex">
 	<div ng-controller="AppController">
-		<div ng-show="loaded">
+		<div id="editor-container" ng-show="loaded">
 			<select id="frameSet" ng-model="data.selectedFrameSet" ng-options="item as item.name for item in frameSet">
 				<option value="">-- frame set --</option>
 			</select>
 			<select id="frame" ng-if="data.selectedFrameSet" ng-model="data.selectedFrame" ng-options="item as item.id for item in data.selectedFrameSet.frames">
 				<option value="">-- frame --</option>
 			</select>
+			<div id="spinner" ng-class="{true: 'visible'}[showSpinner]"></div>
 			<div id="selectedFrame" class="cf" ng-if="data.selectedFrame !== null">
 				<textarea ng-model="data.mmb" id="mmb" parse-mmb placeholder="paste an -mmb here or click on the image to add macroblock operations, invert bits operations can be added in the right bar"></textarea>
 				<div class="cf">
 					<div id="imageInfo">
 						<p ng-if="data.selectedMacroBlock">MB {{data.selectedMacroBlock.x}}:{{data.selectedMacroBlock.y}} - {{getMBLogInfo(data.selectedMacroBlock.x, data.selectedMacroBlock.y)}}{{getMBErrorInfo(data.selectedMacroBlock.x, data.selectedMacroBlock.y)}}</p>
-						<div id="spinner" ng-class="{true: 'visible'}[showSpinner]"></div>
 					</div>
 					<div id="errorOverview">
 						<label for="showLegend">Show Errors</label><input id="showLegend" type="checkbox" ng-model="showLegend" /> Num Errors: {{data.errorCount}}
@@ -282,9 +287,7 @@
 				</div>
 				<div id="imageMask" macroblock-selector="data">
 					<img src="{{imagePath}}" width="703" height="480" />
-					<div id="imageLegend" ng-if="showLegend" image-legend>
-						
-					</div>
+					<div id="imageLegend" ng-if="showLegend" image-legend></div>
 				</div>
 				<div id="operations">
 					<div id="globalOperations">
@@ -314,7 +317,7 @@
 					</div>
 				</div>
 				<p id="imgLink" ng-if="imagePath"><a target="_blank" href="{{imagePath}}">Save Image</a> (right click save as)</p>
-				<textarea ng-model="data.frameLog" readonly="readonly" id="log" enter-submit></textarea>
+				<textarea ng-model="data.frameLog" readonly="readonly" id="log"></textarea>
 			</div>
 		</div>
 	</div>
