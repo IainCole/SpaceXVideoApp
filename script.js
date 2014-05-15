@@ -54,7 +54,7 @@ function opIsValid(op) {
 				return false;
 			}
 
-			if (!/^[0-9a-f]{1,2}$/i.test(op.mask)) {
+			if (!/^[0-9a-f]{1,2}$/i.test(maskToHex(op.mask))) {
 				return false;
 			}
 
@@ -64,6 +64,13 @@ function opIsValid(op) {
 
 	return false;
 }
+
+function pad(num) {
+	var s = num + "";
+	while (s.length < 2) s = "0" + s;
+	return s;
+}
+
 
 function formatMMB(val, lastCommandChanged, readaheadIndex) {
 	readaheadIndex = readaheadIndex || 0;
@@ -77,7 +84,7 @@ function formatMMB(val, lastCommandChanged, readaheadIndex) {
 			if (lastCommandChanged && op == lastCommandChanged.op) {
 				pos += lastCommandChanged.delta * readaheadIndex;
 			};
-			mmb.push('X:' + pos + ':' + op.mask);
+			mmb.push('X:' + pos + ':' + maskToHex(op.mask));
 		};
 	});
 
@@ -153,13 +160,19 @@ function parseMMBPart(op) {
 	} else if (reXor.test(op)) {
 		var matches = reXor.exec(op);
 		var pos = parseInt(matches[1]);
-		var mask = matches[2];
+		var bin = parseInt(matches[2], 16).toString(2).substring(0, 8);
 
-		return {
+		var ret = {
 			__type: 'xor_bitpos',
 			pos: pos,
-			mask: mask
+			mask: { }
 		};
+
+		for (var i = 0; i < bin.length; i++) {
+			ret.mask['b' + (7 - i)] = bin[i] == '1';
+		}
+
+		return ret;
 	}
 
 	return null;
@@ -215,6 +228,74 @@ spacex.directive('parseMmb', [function () {
 		require: 'ngModel'
 	};
 } ]);
+
+function maskToHex(mask) {
+	var val = 0;
+
+	if (mask.b0) {
+		val += 1;
+	}
+
+	if (mask.b1) {
+		val += 2;
+	}
+
+	if (mask.b2) {
+		val += 4;
+	}
+
+	if (mask.b3) {
+		val += 8;
+	}
+
+	if (mask.b4) {
+		val += 16;
+	}
+
+	if (mask.b5) {
+		val += 32;
+	}
+
+	if (mask.b6) {
+		val += 64;
+	}
+
+	if (mask.b7) {
+		val += 128;
+	}
+
+	return pad(val.toString(16).toUpperCase());
+}
+
+spacex.directive('bitmask', function () {
+	return {
+		link: function ($scope, element, attributes, ngModel) {
+
+			function format(value) {
+				return maskToHex(value);
+			}
+
+			$scope.$watch(attributes.ngModel, function (newVal) {
+				element[0].value = format(newVal);
+			}, true);
+
+			ngModel.$formatters.push(format);
+
+			ngModel.$parsers.push(function (value) {
+				var bin = parseInt(value, 16).toString(2).substring(0, 8);
+
+				var ret = {};
+
+				for (var i = 0; i < bin.length; i++) {
+					ret['b' + (7 - i)] = bin[i] == '1';
+				}
+
+				return ret;
+			});
+		},
+		require: 'ngModel'
+	};
+});
 
 spacex.directive('macroblockSelector', ['$compile', function ($compile) {
 	return {
@@ -502,8 +583,41 @@ function AppController($scope, $q, imgService, preloader) {
 	$scope.$watch('data.mmb.globalOperations', function (newVal, oldVal) {
 		removeEmptyMacroblocks();
 	}, true);
-	
-	
+
+	$scope.rotateMaskLeft = function (mask) {
+		var shifted = mask.b7;
+		mask.b7 = mask.b6;
+		mask.b6 = mask.b5;
+		mask.b5 = mask.b4;
+		mask.b4 = mask.b3;
+		mask.b3 = mask.b2;
+		mask.b2 = mask.b1;
+		mask.b1 = mask.b0;
+		mask.b0 = shifted;
+	};
+
+	$scope.invertMask = function (mask) {
+		mask.b0 = !mask.b0;
+		mask.b1 = !mask.b1;
+		mask.b2 = !mask.b2;
+		mask.b3 = !mask.b3;
+		mask.b4 = !mask.b4;
+		mask.b5 = !mask.b5;
+		mask.b6 = !mask.b6;
+		mask.b7 = !mask.b7;
+	};
+
+	$scope.rotateMaskRight = function (mask) {
+		var shifted = mask.b0;
+		mask.b0 = mask.b1;
+		mask.b1 = mask.b2;
+		mask.b2 = mask.b3;
+		mask.b3 = mask.b4;
+		mask.b4 = mask.b5;
+		mask.b5 = mask.b6;
+		mask.b6 = mask.b7;
+		mask.b7 = shifted;
+	};
 
 	var currentImageUrl;
 
@@ -556,7 +670,16 @@ function AppController($scope, $q, imgService, preloader) {
 		removeEmptyMacroblocks();
 		$scope.data.mmb.globalOperations.push({
 			__type: 'xor_bitpos',
-			mask: '1'
+			mask: {
+				b0: true,
+				b1: false,
+				b2: false,
+				b3: false,
+				b4: false,
+				b5: false,
+				b6: false,
+				b7: false
+			}
 		});
 	};
 
@@ -809,12 +932,6 @@ function AppController($scope, $q, imgService, preloader) {
 		}
 
 		var block = $scope.data.currentImageInfo[y][x];
-
-		function pad(num) {
-			var s = num + "";
-			while (s.length < 2) s = "0" + s;
-			return s;
-		}
 
 		return 'MB pos/size: ' + block.s + ' ' + pad(x) + ':' + pad(y) + ':' + block.pos + ' ' + block.len + ' dc: ' + block.dc1 + ' ' + block.dc2 + ' ' + block.dc3 + ' ' + block.dc4 + ' - ' + block.dc5 + ' ' + block.dc6;
 	};
