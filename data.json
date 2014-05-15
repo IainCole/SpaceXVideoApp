@@ -114,6 +114,7 @@
     },
  {
       "id": 3,
+	  "selected": true,
       "name": "raw_edit8.ts",
       "frames": [
         {

@@ -537,9 +537,14 @@ function AppController($scope, $q, imgService, preloader) {
 
 	$q.all([
 			imgService.getVersion(),
-			imgService.getFrameSet()]).then(function(result) {
+			imgService.getFrameSet()]).then(function (result) {
 				$scope.version = result[0];
 				$scope.frameSet = result[1];
+				for (var i = 0; i < $scope.frameSet.length; i++) {
+					if ($scope.frameSet[i].selected) {
+						$scope.data.selectedFrameSet = $scope.frameSet[i];
+					}
+				}
 				$scope.loaded = true;
 			});
 
