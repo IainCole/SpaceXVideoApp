@@ -42,6 +42,10 @@ function opIsValid(op) {
 		if (op.c2 != undefined && op.c2 != null && isNaN(parseInt(op.c2))) {
 			return false;
 		}
+
+		if (op.dir != undefined && op.dir != null && (isNaN(parseInt(op.dir)) || parseInt(op.dir) < 0 || parseInt(op.dir) > 63)) {
+			return false;
+		}
 		
 		return true;
 	} else {
@@ -82,7 +86,7 @@ function formatMMB(val, lastCommandChanged, readaheadIndex) {
 			angular.forEach(row, function (op, c) {
 				if (op) {
 					if (op.__type == 'macro_block_op' && opIsValid(op)) {
-						var components = [c, l, op.pos, op.l1, op.l2, op.l3, op.l4, op.c1, op.c2];
+						var components = [c, l, op.pos, op.l1, op.l2, op.l3, op.l4, op.c1, op.c2, op.dir];
 						if (lastCommandChanged && op == lastCommandChanged.op) {
 							for (var i = 0; i < components.length; i++) {
 								if (components[i] && lastCommandChanged) {
@@ -101,7 +105,7 @@ function formatMMB(val, lastCommandChanged, readaheadIndex) {
 	return mmb.join(",");
 }
 
-var mbOp = /^([0-9]+):([0-9]+):(-1|-2|[0-9]+)(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?$/;
+var mbOp = /^([0-9]+):([0-9]+):(-1|-2|[0-9]+)(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?(?::(-?[0-9]+)?)?$/;
 var reXor = /^x:([0-9]+):([0-9a-f]{1,2})$/i;
 
 function parseMMBPart(op) {
@@ -139,6 +143,10 @@ function parseMMBPart(op) {
 
 		if (matches[9]) {
 			op.c2 = parseInt(matches[9]);
+		}
+
+		if (matches[10]) {
+			op.dir = parseInt(matches[10]);
 		}
 
 		return op;
