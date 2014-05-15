@@ -30,6 +30,17 @@
 		padding-bottom: 5px;
 	}
 	
+	a, a:active, a:hover 
+	{
+		text-decoration:none;
+		color:#533787;
+	}
+	
+	a:hover
+	{
+		text-decoration:underline;
+	}
+	
 	#editor-container
 	{
 		position:relative;
@@ -310,9 +321,7 @@
 								<input type="checkbox" ng-model="op.mask.b1" name="b1" />
 								<input type="checkbox" ng-model="op.mask.b0" name="b0" />
 								<div id="bitShiftOp">
-									<a href="javascript://" ng-click="rotateMaskLeft(op.mask)">Rotate Left</a>
-									<a href="javascript://" ng-click="invertMask(op.mask)">Invert</a>
-									<a href="javascript://" ng-click="rotateMaskRight(op.mask)">Rotate Right</a>
+									<a href="javascript://" ng-click="rotateMaskLeft(op.mask)">Shift Left</a> | <a href="javascript://" ng-click="invertMask(op.mask)">Invert</a> | <a href="javascript://" ng-click="rotateMaskRight(op.mask)">Shift Right</a>
 								</div>
 							</div>
 						</div>
