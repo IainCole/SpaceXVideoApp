@@ -71,6 +71,9 @@ function pad(num) {
 	return s;
 }
 
+function isNullOrEmpty(string) {
+	return string === undefined || string === null || string === '' || string === '0' || string === 0;
+}
 
 function formatMMB(val, lastCommandChanged, readaheadIndex) {
 	readaheadIndex = readaheadIndex || 0;
@@ -106,43 +109,18 @@ function formatMMB(val, lastCommandChanged, readaheadIndex) {
 							};
 						}
 
-						if (op.dir && !(op.l1 || op.l2 || op.l3 || op.l4 || op.c1 || op.c2)) {
-							command += '::' + op.dir;
+						if (isNullOrEmpty(op.l1) && isNullOrEmpty(op.l2) && isNullOrEmpty(op.l3) && isNullOrEmpty(op.l4) && isNullOrEmpty(op.c1) && isNullOrEmpty(op.c2)) {
+							if (op.dir) {
+								command += '::' + op.dir;
+							}
 						} else {
-							var max = 0;
-
-							if (!op.dir) {
-								if (op.l1) {
-									max = 1;
-								}
-
-								if (op.l2) {
-									max = 2;
-								}
-
-								if (op.l3) {
-									max = 3;
-								}
-
-								if (op.l4) {
-									max = 4;
-								}
-
-								if (op.c1) {
-									max = 5;
-								}
-
-								if (op.c2) {
-									max = 6;
-								}
-							} else {
-								max = 6;
-							}
-
-							for (var h = 0; h < max; h++) {
-								command += ':' + (components[h] ? components[h] : '');
-							}
-
+							command += ':' + (isNullOrEmpty(op.l1) ? '0' : op.l1);
+							command += ':' + (isNullOrEmpty(op.l2) ? '0' : op.l2);
+							command += ':' + (isNullOrEmpty(op.l3) ? '0' : op.l3);
+							command += ':' + (isNullOrEmpty(op.l4) ? '0' : op.l4);
+							command += ':' + (isNullOrEmpty(op.c1) ? '0' : op.c1);
+							command += ':' + (isNullOrEmpty(op.c2) ? '0' : op.c2);
+							
 							if (op.dir) {
 								command += ':' + op.dir;
 							}
