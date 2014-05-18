@@ -465,6 +465,14 @@ spacex.factory('imgService', ['$http', '$q', function ($http, $q) {
 				return result.data.frameSets;
 			});
 		},
+		getAppVersion: function () {
+			return $http({
+				method: 'GET',
+				url: './version.json'
+			}).then(function (result) {
+				return result.data.version;
+			});
+		},
 		getFrameInfo: function (selectedFrameSet, selectedFrame, version, mmb) {
 			return $http({
 				method: 'GET',
@@ -573,22 +581,37 @@ spacex.factory("preloader", function ($q, $rootScope) {
 });
 
 
-function AppController($scope, $q, imgService, preloader) {
+function AppController($scope, $q, imgService, preloader, $timeout) {
 	$scope.loaded = false;
 	$scope.lastCommandChanged = null;
 
+	function checkVersion() {
+		imgService.getAppVersion().then(function (version) {
+			if (version > $scope.appVersion) {
+				alert('A new application version is available, please reload the application to get the latest changes.');
+			} else {
+				$timeout(checkVersion, 60000);
+			}
+		});
+	}
+
 	$q.all([
 			imgService.getVersion(),
-			imgService.getFrameSet()]).then(function (result) {
-				$scope.version = result[0];
-				$scope.frameSet = result[1];
-				for (var i = 0; i < $scope.frameSet.length; i++) {
-					if ($scope.frameSet[i].selected) {
-						$scope.data.selectedFrameSet = $scope.frameSet[i];
-					}
-				}
-				$scope.loaded = true;
-			});
+			imgService.getAppVersion(),
+			imgService.getFrameSet()]
+	).then(function (result) {
+		$scope.version = result[0];
+		$scope.appVersion = result[1];
+		$scope.frameSet = result[2];
+		for (var i = 0; i < $scope.frameSet.length; i++) {
+			if ($scope.frameSet[i].selected) {
+				$scope.data.selectedFrameSet = $scope.frameSet[i];
+			}
+		}
+		$scope.loaded = true;
+
+		$timeout(checkVersion, 60000);
+	});
 
 	$scope.data = {
 		mmb: {
