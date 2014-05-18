@@ -280,10 +280,19 @@
 		width:99px;
 	}
 	
+	#newVersion
+	{
+		border: 1px solid red;
+		font-size: 18px;
+		text-align: center;
+		padding: 7px;
+	}
+	
 </style>
 <body ng-app="spacex">
 	<div ng-controller="AppController">
 		<div id="editor-container" ng-show="loaded">
+		<div ng-if="newVersionAvailable" id="newVersion">A new application version is available, please <a href="javascript://" ng-click="reloadApp()">reload the application</a> to get the latest changes.</div>
 			<select id="frameSet" ng-model="data.selectedFrameSet" ng-options="item as item.name for item in frameSet">
 				<option value="">-- frame set --</option>
 			</select>

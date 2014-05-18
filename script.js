@@ -585,12 +585,18 @@ function AppController($scope, $q, imgService, preloader, $timeout) {
 	$scope.loaded = false;
 	$scope.lastCommandChanged = null;
 
+	$scope.reloadApp = function () {
+		location.reload();
+	};
+
+	var versionCheckSeconds = 60;
+	
 	function checkVersion() {
 		imgService.getAppVersion().then(function (version) {
 			if (version > $scope.appVersion) {
-				alert('A new application version is available, please reload the application to get the latest changes.');
+				$scope.newVersionAvailable = true;
 			} else {
-				$timeout(checkVersion, 60000);
+				$timeout(checkVersion, versionCheckSeconds * 1000);
 			}
 		});
 	}
@@ -601,6 +607,7 @@ function AppController($scope, $q, imgService, preloader, $timeout) {
 			imgService.getFrameSet()]
 	).then(function (result) {
 		$scope.version = result[0];
+		$scope.newVersionAvailable = false;
 		$scope.appVersion = result[1];
 		$scope.frameSet = result[2];
 		for (var i = 0; i < $scope.frameSet.length; i++) {
@@ -610,7 +617,7 @@ function AppController($scope, $q, imgService, preloader, $timeout) {
 		}
 		$scope.loaded = true;
 
-		$timeout(checkVersion, 60000);
+		$timeout(checkVersion, versionCheckSeconds * 1000);
 	});
 
 	$scope.data = {
