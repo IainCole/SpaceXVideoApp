@@ -223,7 +223,7 @@ function parseMMBPart(op) {
 }
 
 function parseMMB (mmbString) {
-	var parts = mmbString == null ? '' : mmbString.replace('\n', '').split(',');
+	var parts = mmbString == null ? '' : mmbString.replace(/\n/g, '').split(',');
 
 	var val = {
 		globalOperations: [],
