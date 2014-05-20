@@ -210,7 +210,16 @@ function parseMMBPart(op) {
 			mask: { }
 		};
 
-		for (var i = 0; i < bin.length; i++) {
+		var i;
+
+		if (bin.length < 8) {
+			var len = bin.length;
+			for (i = 0; i < 8 - len; i++) {
+				bin = '0' + bin;
+			}
+		}
+
+		for (i = 0; i < bin.length; i++) {
 			ret.mask['b' + (7 - i)] = bin[i] == '1';
 		}
 
@@ -446,7 +455,7 @@ spacex.directive('imageLegend', ['$compile', function ($compile) {
 
 
 spacex.factory('imgService', ['$http', '$q', function ($http, $q) {
-	var basePath = 'http://dz0bwiwndcjbh.cloudfront.net';
+	var basePath = 'http://localhost:59000';
 
 	return {
 		getVersion: function () {
