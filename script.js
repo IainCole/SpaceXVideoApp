@@ -448,7 +448,7 @@ spacex.directive('imageLegend', ['$compile', function ($compile) {
 
 
 spacex.factory('imgService', ['$http', '$q', function ($http, $q) {
-	var basePath = 'http://localhost:59000';
+	var basePath = 'http://dz0bwiwndcjbh.cloudfront.net';
 
 	return {
 		getVersion: function () {
