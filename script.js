@@ -210,17 +210,10 @@ function parseMMBPart(op) {
 			mask: { }
 		};
 
-		var i;
-
-		if (bin.length < 8) {
-			var len = bin.length;
-			for (i = 0; i < 8 - len; i++) {
-				bin = '0' + bin;
-			}
-		}
-
-		for (i = 0; i < bin.length; i++) {
-			ret.mask['b' + (7 - i)] = bin[i] == '1';
+		var len = bin.length;
+		
+		for (var i = 0; i < bin.length; i++) {
+			ret.mask['b' + ((len- 1) - i)] = bin[i] == '1';
 		}
 
 		return ret;
