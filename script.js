@@ -915,7 +915,7 @@ function AppController($scope, $q, imgService, preloader, $timeout) {
 
 	//MB pos/size: 0 00:00:550 119 dc: 162 169 161 169 - 132 124
 
-	var infoRe = /MB pos\/size: (-?[0-9]) ([0-9]+):([0-9]+):([0-9]+) ([0-9]+) dc: ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+) - ([0-9]+) ([0-9]+)/;
+	var infoRe = /MB pos\/size: (-?[0-9]) ([0-9]+):([0-9]+):([0-9]+):([0-9]+) ([0-9]+) dc: ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+) - ([0-9]+) ([0-9]+)/;
 	var dcClippedRe = /dc clipped at ([0-9]+)x([0-9]+)/;
 	var cbpcDamagedRe = /I cbpc damaged at ([0-9]+) ([0-9]+) [0-9]+/;
 	var acTexDamagedRe = /ac-tex damaged at ([0-9]+) ([0-9]+) [0-9]+/;
@@ -945,17 +945,18 @@ function AppController($scope, $q, imgService, preloader, $timeout) {
 			if (infoRe.test(lines[i])) {
 				var match = infoRe.exec(lines[i]);
 				var s = parseInt(match[1]);
-				var x = parseInt(match[2]);
-				var y = parseInt(match[3]);
-				var pos = parseInt(match[4]);
-				var len = parseInt(match[5]);
+				var frame = parseInt(match[2]);
+				var x = parseInt(match[3]);
+				var y = parseInt(match[4]);
+				var pos = parseInt(match[5]);
+				var len = parseInt(match[6]);
 
-				var dc1 = parseInt(match[6]);
-				var dc2 = parseInt(match[7]);
-				var dc3 = parseInt(match[8]);
-				var dc4 = parseInt(match[9]);
-				var dc5 = parseInt(match[10]);
-				var dc6 = parseInt(match[11]);
+				var dc1 = parseInt(match[7]);
+				var dc2 = parseInt(match[8]);
+				var dc3 = parseInt(match[9]);
+				var dc4 = parseInt(match[10]);
+				var dc5 = parseInt(match[11]);
+				var dc6 = parseInt(match[12]);
 				
 				if (!$scope.data.currentImageInfo[y]) {
 					$scope.data.currentImageInfo[y] = [];
