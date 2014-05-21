@@ -915,7 +915,7 @@ function AppController($scope, $q, imgService, preloader, $timeout) {
 
 	//MB pos/size: 0 00:00:550 119 dc: 162 169 161 169 - 132 124
 
-	var infoRe = /MB pos\/size: (-?[0-9]) ([0-9]+):([0-9]+):([0-9]+):([0-9]+) ([0-9]+) dc: ([0-9]+) ([0-9]+) ([0-9]+) ([0-9]+) - ([0-9]+) ([0-9]+)/;
+	var infoRe = /MB pos\/size: (-?[0-9]) ([0-9]+):([0-9]+):([0-9]+):([0-9]+) ([0-9]+) dc: (-?[0-9]+) (-?[0-9]+) (-?[0-9]+) (-?[0-9]+) - (-?[0-9]+) (-?[0-9]+)/;
 	var dcClippedRe = /dc clipped at ([0-9]+)x([0-9]+)/;
 	var cbpcDamagedRe = /I cbpc damaged at ([0-9]+) ([0-9]+) [0-9]+/;
 	var acTexDamagedRe = /ac-tex damaged at ([0-9]+) ([0-9]+) [0-9]+/;
